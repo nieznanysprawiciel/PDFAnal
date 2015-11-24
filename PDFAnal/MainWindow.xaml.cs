@@ -1,17 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Microsoft.Win32;
+using org.pdfclown.files;
+using org.pdfclown.documents;
+using org.pdfclown.tools;
+using org.pdfclown.documents.contents;
+using System.Drawing;
 
 namespace PDFAnal
 {
@@ -24,5 +19,40 @@ namespace PDFAnal
         {
             InitializeComponent();
         }
+
+        private void LoadPDFButton_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog fileDialog = new OpenFileDialog();
+            fileDialog.DefaultExt = ".pdf";
+            fileDialog.Filter = "PDF documents (.pdf)|*.pdf";
+
+            Nullable<bool> result = fileDialog.ShowDialog();
+            if( result == true )
+            {
+                string fileName = fileDialog.FileName;
+                File file = new File( fileName );
+                Document document = file.Document;
+
+                GetInterestingThings( document );
+            }
+        }
+
+        private void GetInterestingThings( Document document )
+        {
+			TextExtractor textExtractor = new TextExtractor();
+			ContentTextBox.Text = "";
+
+			foreach ( var page in document.Pages )
+            {
+				var textStrings = textExtractor.Extract( page );
+				string content = TextExtractor.ToString( textStrings );
+
+				ContentTextBox.Text += content + "\n\n";
+            }
+
+            //
+
+        }
+
     }
 }
