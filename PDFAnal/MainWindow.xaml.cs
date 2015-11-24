@@ -25,8 +25,9 @@ namespace PDFAnal
             OpenFileDialog fileDialog = new OpenFileDialog();
             fileDialog.DefaultExt = ".pdf";
             fileDialog.Filter = "PDF documents (.pdf)|*.pdf";
+			fileDialog.InitialDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
 
-            Nullable<bool> result = fileDialog.ShowDialog();
+			Nullable<bool> result = fileDialog.ShowDialog();
             if( result == true )
             {
                 string fileName = fileDialog.FileName;

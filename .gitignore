@@ -1,3 +1,6 @@
+# Don't ignore
+#.dll
+
 # Compiled Object files
 *.slo
 *.lo

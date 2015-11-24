@@ -37,7 +37,7 @@
   <ItemGroup>
     <Reference Include="PDFClown, Version=0.1.2.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\ProjectRelease\PDFClown.dll</HintPath>
+      <HintPath>Libraries\PDFClown.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
