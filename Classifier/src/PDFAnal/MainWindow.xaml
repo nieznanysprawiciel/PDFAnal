@@ -10,6 +10,6 @@
         <TextBox x:Name="ContentTextBox" AcceptsReturn="True" HorizontalAlignment="Left" Height="439" Margin="10,106,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="572" Grid.ColumnSpan="2"/>
         <Button x:Name="LoadPDFButton" Content="Load PDF" HorizontalAlignment="Left" Margin="400.851,35,0,0" VerticalAlignment="Top" Width="75" Click="LoadPDFButton_Click" Grid.Column="1"/>
         <Button x:Name="ProcessPDFBButton" Content="Process PDF" HorizontalAlignment="Left" Margin="321,35,0,0" VerticalAlignment="Top" Width="75" Click="ProcessPDFBButton_Click" Grid.Column="1"/>
-        
+        <Button x:Name="Test" Content="Test" HorizontalAlignment="Left" Margin="0,35,0,0" VerticalAlignment="Top" Width="75" Click="Test_Click" Grid.Column="1"/>
     </Grid>
 </Window>

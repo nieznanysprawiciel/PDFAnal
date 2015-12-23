@@ -35,6 +35,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="LAIR.Collections">
+      <HintPath>..\..\lib\LAIR.Collections.dll</HintPath>
+    </Reference>
     <Reference Include="PDFClown, Version=0.1.2.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>Libraries\PDFClown.dll</HintPath>
@@ -67,6 +70,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="StopWord.cs" />
     <Compile Include="Stemmer.cs" />
     <Compile Include="Utility.cs" />
     <Compile Include="MainWindow.xaml.cs">
@@ -100,6 +104,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\WordNet\WordNet.csproj">
+      <Project>{f4c6c48c-90ef-445d-b8f8-ad9b6767d9a8}</Project>
+      <Name>WordNet</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
