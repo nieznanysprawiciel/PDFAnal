@@ -29,7 +29,7 @@
 *.out
 *.app
 
-.suo
+*.suo
 
 Classifier/src/IntermediateBuildDir
 Classifier/src/ProjectRelease
