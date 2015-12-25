@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using System.Windows;
 using System.Linq;
 using Microsoft.Win32;
@@ -25,8 +26,9 @@ namespace PDFAnal
         private WordNetSimilarityModel semanticSimilarityModel;
 
         private Document document;
-        private List<string> pageList = new List<string>();
-        
+        private List<string> pageList;
+
+        private Set<SynSet> categories;
 
         public MainWindow()
         {
@@ -34,6 +36,13 @@ namespace PDFAnal
 
             wordNetEngine = new WordNetEngine(@"..\..\resources", false);
             semanticSimilarityModel = new WordNetSimilarityModel(wordNetEngine);
+
+            pageList = new List<string>();
+            categories = new Set<SynSet>();
+            SynSet categoryTelecommuncationSynset = wordNetEngine.GetSynSet("Noun:6282431");    //  {telecommuncation, telecom}
+            SynSet categoryMathSynset = wordNetEngine.GetSynSet("Noun:6009822");    //  mathematics, math, maths
+            categories.Add(categoryTelecommuncationSynset);
+            categories.Add(categoryMathSynset);
         }
 
         private void ProcessPDFBButton_Click(object sender, RoutedEventArgs e)
@@ -142,12 +151,12 @@ namespace PDFAnal
             }
 
 
-            Utility.log( "all words count: " + allWordsCount );
-            Utility.log( "non stopwords count: " + nonStopWordsCount );
-            Utility.log( "stopwords count: " + stopWordCount );
-            Utility.log( "empty stems count: " + emptyStemsCount);
-            Utility.log( "stemmed words that has SynSets count: " + stemmedWordsThatHasSynSetsCount );
-            Utility.log( "synsets count: " + resultingSynSetsDict.Count );
+            Utility.Log( "all words count: " + allWordsCount );
+            Utility.Log( "non stopwords count: " + nonStopWordsCount );
+            Utility.Log( "stopwords count: " + stopWordCount );
+            Utility.Log( "empty stems count: " + emptyStemsCount);
+            Utility.Log( "stemmed words that has SynSets count: " + stemmedWordsThatHasSynSetsCount );
+            Utility.Log( "synsets count: " + resultingSynSetsDict.Count );
             /*Set<string> bestPair = null;
             SynSet bestSynSet = null;
             foreach ( var keyValuePair in resultingSynSetsDict ) {
@@ -175,8 +184,8 @@ namespace PDFAnal
             }*/
 
             //  TOP k
-            int k = 20;
-            Utility.log("top " + k + ": ");
+            int k = 5;
+            Utility.Log("top " + k + ": ");
             var resultingSynSetsList = resultingSynSetsWordsCountDict.ToList();
             resultingSynSetsList.Sort(
                 delegate(KeyValuePair<SynSet, Tuple<int, int>> firstPair, KeyValuePair<SynSet, Tuple<int, int>> nextPair)
@@ -187,15 +196,100 @@ namespace PDFAnal
             for (int i = 0; i < Math.Min(k, resultingSynSetsList.Count); ++i)
             {
                 var keyValuePair = resultingSynSetsList[i];
-                Utility.log("----->");
-                Utility.log("\t" + keyValuePair.Value.Item1 + " words and " + keyValuePair.Value.Item2 + " unique stemmed words related to this synset");
-                Utility.log("\tsynset: ");
+                Utility.Log("----->");
+                Utility.Log("\t" + keyValuePair.Value.Item1 + " words and " + keyValuePair.Value.Item2 + " unique stemmed words related to this synset");
+                Utility.Log("\tsynset: ");
                 foreach ( var word in keyValuePair.Key.Words )
                 {
-                    Utility.log("\t\t" + word);
+                    Utility.Log("\t\t" + word);
                 }
             }
 
+            //  lets try to classify the document
+            //Dictionary<string, int> tempStemmedWordsOccuranceCountDict = new Dictionary<string, int>( stemmedWordsOccuranceCountDict );    //  <stemmedWord, occuranceCount>
+            ////Dictionary<SynSet, Set<string>> tempResultingSynSetsDict = new Dictionary<SynSet, Set<string>>( resultingSynSetsDict );   //  <SynSet, Set<stemmedWord>>
+            List<WordNetEngine.SynSetRelation> synSetRelations = new List<WordNetEngine.SynSetRelation>();
+            synSetRelations.Add( WordNetEngine.SynSetRelation.Hypernym );
+            Dictionary<SynSet, double> classificationResultDict = new Dictionary<SynSet, double>(); //  <categorySynSet, mysimiliartyBetwCatSynSetAndDoc>
+            int x = 0;
+            foreach ( var category in categories )
+            {
+                Dictionary<string, int> tempStemmedWordsOccuranceCountDict = new Dictionary<string, int>(stemmedWordsOccuranceCountDict);    //  <stemmedWord, occuranceCount>
+                x++;
+                string categoryText = Utility.Words(category);
+                if (x == 2)
+                {
+                    bool a = true;
+                }
+                double mySimilarity = 0.0d;
+                for ( int i = 0 ; i < Math.Min( k, resultingSynSetsList.Count ) ; ++i )
+                {
+                    SynSet synSetFromDocument = resultingSynSetsList[i].Key;
+                    // get the LCS along the similarity relations
+                    SynSet lcs = category.GetClosestMutuallyReachableSynset(synSetFromDocument, synSetRelations);
+                    if ( ! (lcs == null) )
+                    {
+                        // get depth of synsets
+                        int lcsDepth = lcs.GetDepth(synSetRelations) + 1;
+                        int categoryDepth = category.GetShortestPathTo(lcs, synSetRelations).Count - 1 + lcsDepth;
+                        int synSetFromDocumentDepth = synSetFromDocument.GetShortestPathTo(lcs, synSetRelations).Count - 1 + lcsDepth;
+
+                        //  count words from this documentsynset
+                        int wordCount = 0;
+                        foreach (string word in resultingSynSetsDict[synSetFromDocument])
+                        {
+                            int stemmedWordCount;
+                            if (tempStemmedWordsOccuranceCountDict.TryGetValue(word, out stemmedWordCount))
+                            {
+                                wordCount += stemmedWordCount;
+                                tempStemmedWordsOccuranceCountDict.Remove(word);
+                            }
+                        }
+
+                        // get similarity
+                        double synSetsSimilarity = 2 * lcsDepth / (double)(categoryDepth + synSetFromDocumentDepth);
+                        mySimilarity += synSetsSimilarity * wordCount;
+
+                        //  log
+                        Utility.Log(categoryText + "->" + Utility.Words(synSetFromDocument));
+                        Utility.Log("\tlcs[" + lcsDepth + "]:" + Utility.Words(lcs));
+                        Utility.Log("\t\t synSets similarity:" + synSetsSimilarity);
+                        Utility.Log("\tcategory[" + categoryDepth + "] docSynSet[" + synSetFromDocumentDepth + "]");
+                    }
+
+
+
+
+                    /*
+                    SynSet synSetFromDocument = resultingSynSetsList[i].Key;
+                    var shortestPath = category.GetShortestPathTo(synSetFromDocument, synsetRelations);
+                    if ( shortestPath == null )
+                    {
+                        continue;
+                    } 
+                    int pathLength = shortestPath.Count;
+                    Debug.Assert( pathLength != 0 );  //  TODO check this one, it assumes that path from node A to node A is List[] { node A }
+                    int wordCount = 0;
+                    foreach ( string word in tempResultingSynSetsDict[synSetFromDocument] )
+                    {
+                        int stemmedWordCount;
+                        if ( tempStemmedWordsOccuranceCountDict.TryGetValue( word, out stemmedWordCount ) )
+                        {
+                            wordCount += stemmedWordCount;
+                            tempStemmedWordsOccuranceCountDict.Remove( word );
+                        }
+                    }
+                    mySimilarity += ( double )wordCount / pathLength;
+                    */
+                }
+                classificationResultDict.Add( category, mySimilarity );
+            }
+            Utility.Log( "results:" );
+            foreach ( var classificationResult in classificationResultDict )
+            {
+                SynSet category = classificationResult.Key;
+                Utility.Log( "\t" + Utility.Words(category) + ":" + classificationResult.Value );
+            }
         }
 
         private void LoadPDFButton_Click(object sender, RoutedEventArgs e)
@@ -227,9 +321,9 @@ namespace PDFAnal
             synSetsUnionSet.AddRange(automationSynSetSet);
             synSetsUnionSet.AddRange(mechanizationSynSetSet);
 
-            Utility.log(automationWord + " synsets:" + automationSynSetSet.Count);
-            Utility.log(mechanizationWord + " synsets:" + mechanizationSynSetSet.Count);
-            Utility.log("sets union: " + synSetsUnionSet.Count);
+            Utility.Log(automationWord + " synsets:" + automationSynSetSet.Count);
+            Utility.Log(mechanizationWord + " synsets:" + mechanizationSynSetSet.Count);
+            Utility.Log("sets union: " + synSetsUnionSet.Count);
         }
 
         private void GetInterestingThings( Document document )
@@ -246,7 +340,7 @@ namespace PDFAnal
 				ContentTextBox.Text += pageContent + "\n\n";
             }
 
-            Utility.log( "done" );
+            Utility.Log( "done" );
         }
 
 /*        //  straszne dziadostwo jezeli chodzi o parsowanie
@@ -321,7 +415,7 @@ namespace PDFAnal
                 }
             }   //  for
             string stemmedWord = s.ToString();
-            Utility.log(word + " -> " + stemmedWord);
+            Utility.Log(word + " -> " + stemmedWord);
             return stemmedWord;
         }
 
