@@ -55,7 +55,7 @@ namespace PDFAnal
         private static int INC = 50;
         /* unit of size whereby b is increased */
 
-        public Stemmer()
+        private Stemmer()
         {
             b = new char[INC];
             i = 0;
@@ -67,7 +67,7 @@ namespace PDFAnal
          * adding characters, you can call stem(void) to stem the word.
          */
 
-        public void add(char ch)
+        private void add(char ch)
         {
             if (i == b.Length)
             {
@@ -85,7 +85,7 @@ namespace PDFAnal
          * faster.
          */
 
-        public void add(char[] w, int wLen)
+        private void add(char[] w, int wLen)
         {
             if (i + wLen >= b.Length)
             {
@@ -111,7 +111,7 @@ namespace PDFAnal
         /**
          * Returns the length of the word resulting from the stemming process.
          */
-        public int getResultLength()
+        private int getResultLength()
         {
             return i_end;
         }
@@ -121,7 +121,7 @@ namespace PDFAnal
          * the stemming process.  You also need to consult getResultLength()
          * to determine the length of the result.
          */
-        public char[] getResultBuffer()
+        private char[] getResultBuffer()
         {
             return b;
         }
@@ -462,7 +462,7 @@ namespace PDFAnal
          * from the input.  You can retrieve the result with
          * getResultLength()/getResultBuffer() or toString().
          */
-        public void stem()
+        private void stem()
         {
             k = i - 1;
             if (k > 1)
@@ -553,5 +553,56 @@ namespace PDFAnal
                         }
                 }
          */
+
+        public static string Stem(string word)
+        {
+            char[] w = new char[501];
+            Stemmer s = new Stemmer();
+            char[] wordCharsArray = (word + " ").ToCharArray();
+            for (int i = 0; i < wordCharsArray.Length; ++i)
+            {
+                char ch = wordCharsArray[i];
+                if (Char.IsLetter((char)ch))
+                {
+                    int j = 0;
+                    while (true)
+                    {
+                        ch = Char.ToLower((char)ch);
+                        w[j] = (char)ch;
+                        if (j < 500)
+                            j++;
+                        ++i;
+                        if (i == wordCharsArray.Length)
+                        {
+                            break;
+                        }
+                        ch = wordCharsArray[i];
+                        if (!Char.IsLetter((char)ch))
+                        {
+                            // to test add(char ch) 
+                            for (int c = 0; c < j; c++)
+                                s.add(w[c]);
+                            // or, to test add(char[] w, int j) 
+                            // s.add(w, j); 
+                            s.stem();
+
+                            String u;
+
+                            // and now, to test toString() :
+                            u = s.ToString();
+
+                            // to test getResultBuffer(), getResultLength() : 
+                            // u = new String(s.getResultBuffer(), 0, s.getResultLength()); 
+
+                            Console.Write(u);
+                            break;
+                        }
+                    }
+                }
+            }   //  for
+            string stemmedWord = s.ToString();
+            Utility.Log(word + " -> " + stemmedWord);
+            return stemmedWord;
+        }
     }
 }
