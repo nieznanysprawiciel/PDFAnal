@@ -47,18 +47,19 @@ namespace PDFAnal
 
         private void ProcessPDFBButton_Click(object sender, RoutedEventArgs e)
         {
-            Dictionary<string, string> stemmingDict = new Dictionary<string, string>();    //  <word,stemmedWord>
-            Dictionary<string, int> stemmedWordsOccuranceCountDict = new Dictionary<string, int>();    //  <stemmedWord, occuranceCount>
-            Dictionary<SynSet, Set<string>> resultingSynSetsDict = new Dictionary<SynSet, Set<string>>();   //  <SynSet, Set<stemmedWord>>
+            Dictionary<string, List<string>> stemmingDict = new Dictionary<string, List<string>>();    //  <stemmedWord, list<word>>
+            //Dictionary<string, int> stemmedWordsOccuranceCountDict = new Dictionary<string, int>();    //  <stemmedWord, occuranceCount>
             int allWordsCount = 0;
             int nonStopWordsCount = 0;
             int stopWordCount = 0;
-            int stemmedWordsThatHasSynSetsCount = 0;
             int emptyStemsCount = 0;
+
+            //Dictionary<SynSet, Set<string>> resultingSynSetsDict = new Dictionary<SynSet, Set<string>>();   //  <SynSet, Set<stemmedWord>>
+            //int stemmedWordsThatHasSynSetsCount = 0;
 
             foreach (var pageContent in pageList)   // stem all words
             {
-                string[] words = pageContent.Split(new char[] { ' ', '.', ',' }, StringSplitOptions.RemoveEmptyEntries);   //  splits by whitespace
+                string[] words = pageContent.Split(new char[] { ' ', '.', ',' }, StringSplitOptions.RemoveEmptyEntries);
                 allWordsCount += words.Length;
                 foreach (string word in words)
                 {
@@ -78,21 +79,25 @@ namespace PDFAnal
                         emptyStemsCount++;
                         continue;
                     }
-                    //  register this particular stemming
-                    stemmingDict[wordLower] = stemmedWord;
+                    
                     //  check if this stem has already happened before and count it
-                    int occCount;
-                    bool stemmedWordAlreadyProcessed = stemmedWordsOccuranceCountDict.TryGetValue(stemmedWord, out occCount);
+                    List<string> wordList;
+                    bool stemmedWordAlreadyProcessed = stemmingDict.TryGetValue(stemmedWord, out wordList); //stemmedWordsOccuranceCountDict.TryGetValue(stemmedWord, out occCount);
                     if ( stemmedWordAlreadyProcessed )
                     {
-                        stemmedWordsOccuranceCountDict[stemmedWord] = occCount + 1;
+                        //  register this word in existing stemming dictionary entry
+                        wordList.Add(wordLower);
                     }
                     else
                     {
-                        stemmedWordsOccuranceCountDict[stemmedWord] = 1;
+                        //  create new entry in stemming dictionary 
+                        List<string> newWordList = new List<string>();
+                        newWordList.Add(wordLower);
+                        stemmingDict[stemmedWord] = newWordList;
                     }
-
+                    
                     // find synset if new stemmed word
+                    /*
                     Set<SynSet> synSetSet = new Set<SynSet>();
                     if (!stemmedWordAlreadyProcessed)
                     {
@@ -128,28 +133,85 @@ namespace PDFAnal
                             }
                         }
                     }
+                    */
                 }
             }
 
-
-            //  compute synsets' usage - no of words related to each synset
-            Dictionary<SynSet, Tuple<int, int>> resultingSynSetsWordsCountDict = new Dictionary<SynSet, Tuple<int, int>>(); //  <synset, Tuple<wordsCount, uniqueStemsCount>>
-            foreach ( var synsetData in resultingSynSetsDict )    //  for each found synset
+            /*
+            foreach (var z in stemmingDict)
             {
-                int wordsCount = 0;
-                foreach ( var stemmedWord in synsetData.Value )   //  for each stemmed word related to this synset
+                Utility.Log("\t" + z.Key);
+                foreach (var nonStemmedWord in z.Value)
                 {
-                    wordsCount += stemmedWordsOccuranceCountDict[stemmedWord];
+                    Utility.Log("\t\t" + nonStemmedWord);
                 }
-                Debug.Assert( wordsCount >= synsetData.Value.Count );
-                /*bool assert = false;
-                if ( wordsCount < synsetData.Value.Count )
-                {
-                    assert = true;
-                }*/
-                resultingSynSetsWordsCountDict[synsetData.Key] = new Tuple<int, int>(wordsCount, synsetData.Value.Count);
             }
+            */
 
+            Dictionary<SynSet, int> resultingSynSetsDict = new Dictionary<SynSet, int>();   //  <SynSet, wordsCount>
+            int stemmedWordsThatHasSynSetsCount = 0;
+            try {
+                Set<SynSet> synSetSet;
+                foreach (var stemmingDictionaryEntry in stemmingDict )
+                {
+                    Debug.Assert(stemmingDictionaryEntry.Value.Count > 0);
+                    var stemmedWord = stemmingDictionaryEntry.Key;
+                    synSetSet = wordNetEngine.GetSynSets(stemmedWord, WordNetEngine.POS.Noun);
+
+                    if (!(synSetSet.Count == 0))
+                    {
+                        stemmedWordsThatHasSynSetsCount++;
+
+                        //  relate synSet with this stemmed word ( add / modify entry in Dictionary<SynSet, Set<string>> resultingSynSetsDict )
+                        foreach (SynSet synSet in synSetSet)
+                        {
+                            int wordCount;
+                            if (resultingSynSetsDict.TryGetValue(synSet, out wordCount))
+                            {
+                                wordCount += stemmingDictionaryEntry.Value.Count;
+                                resultingSynSetsDict[synSet] = wordCount;
+                            }
+                            else
+                            {
+                                resultingSynSetsDict[synSet] = stemmingDictionaryEntry.Value.Count;
+                            }
+                        }
+                    }
+                    else //  no synsets found for this stemmed word
+                    {
+                        //lets try with not-stemmed word
+                        List<string> nonStemmedWordsSet = stemmingDict[stemmedWord];
+                        //group by and count
+                        var q = from x in nonStemmedWordsSet
+                                group x by x into g
+                                let count = g.Count()
+                                select new { Value = g.Key, Count = count };
+                        foreach (var nonStemmedWordCountKeyValue in q)
+                        {
+                            var nonStemmedWord = nonStemmedWordCountKeyValue.Value;
+                            synSetSet = wordNetEngine.GetSynSets(nonStemmedWord, WordNetEngine.POS.Noun);
+
+                            //XXX
+                            //  relate synSet with this stemmed word ( add / modify entry in Dictionary<SynSet, Set<string>> resultingSynSetsDict )
+                            foreach (SynSet synSet in synSetSet)
+                            {
+                                int pair;
+                                if (resultingSynSetsDict.TryGetValue(synSet, out pair))
+                                {
+                                    pair += nonStemmedWordCountKeyValue.Count;
+                                    resultingSynSetsDict[synSet] = pair;
+                                }
+                                else
+                                {
+                                    resultingSynSetsDict[synSet] = nonStemmedWordCountKeyValue.Count;
+                                }
+                            }
+                            //~~XXX
+                        }                  
+                    }
+                }
+            } catch (Exception ex) { Debug.Assert(false, ex.ToString()); }
+            
 
             Utility.Log( "all words count: " + allWordsCount );
             Utility.Log( "non stopwords count: " + nonStopWordsCount );
@@ -184,20 +246,20 @@ namespace PDFAnal
             }*/
 
             //  TOP k
-            int k = 5;
+            int k = 30;
             Utility.Log("top " + k + ": ");
-            var resultingSynSetsList = resultingSynSetsWordsCountDict.ToList();
+            var resultingSynSetsList = resultingSynSetsDict.ToList();
             resultingSynSetsList.Sort(
-                delegate(KeyValuePair<SynSet, Tuple<int, int>> firstPair, KeyValuePair<SynSet, Tuple<int, int>> nextPair)
+                delegate(KeyValuePair<SynSet, int> firstPair, KeyValuePair<SynSet, int> nextPair)
                 {
-                    return nextPair.Value.Item1.CompareTo(firstPair.Value.Item1);
+                    return nextPair.Value.CompareTo(firstPair.Value);
                 }
             );
             for (int i = 0; i < Math.Min(k, resultingSynSetsList.Count); ++i)
             {
                 var keyValuePair = resultingSynSetsList[i];
                 Utility.Log("----->");
-                Utility.Log("\t" + keyValuePair.Value.Item1 + " words and " + keyValuePair.Value.Item2 + " unique stemmed words related to this synset");
+                Utility.Log("\t" + keyValuePair.Value + " words" );
                 Utility.Log("\tsynset: ");
                 foreach ( var word in keyValuePair.Key.Words )
                 {
@@ -211,16 +273,9 @@ namespace PDFAnal
             List<WordNetEngine.SynSetRelation> synSetRelations = new List<WordNetEngine.SynSetRelation>();
             synSetRelations.Add( WordNetEngine.SynSetRelation.Hypernym );
             Dictionary<SynSet, double> classificationResultDict = new Dictionary<SynSet, double>(); //  <categorySynSet, mysimiliartyBetwCatSynSetAndDoc>
-            int x = 0;
             foreach ( var category in categories )
             {
-                Dictionary<string, int> tempStemmedWordsOccuranceCountDict = new Dictionary<string, int>(stemmedWordsOccuranceCountDict);    //  <stemmedWord, occuranceCount>
-                x++;
                 string categoryText = Utility.Words(category);
-                if (x == 2)
-                {
-                    bool a = true;
-                }
                 double mySimilarity = 0.0d;
                 for ( int i = 0 ; i < Math.Min( k, resultingSynSetsList.Count ) ; ++i )
                 {
@@ -235,16 +290,7 @@ namespace PDFAnal
                         int synSetFromDocumentDepth = synSetFromDocument.GetShortestPathTo(lcs, synSetRelations).Count - 1 + lcsDepth;
 
                         //  count words from this documentsynset
-                        int wordCount = 0;
-                        foreach (string word in resultingSynSetsDict[synSetFromDocument])
-                        {
-                            int stemmedWordCount;
-                            if (tempStemmedWordsOccuranceCountDict.TryGetValue(word, out stemmedWordCount))
-                            {
-                                wordCount += stemmedWordCount;
-                                tempStemmedWordsOccuranceCountDict.Remove(word);
-                            }
-                        }
+                        int wordCount = resultingSynSetsDict[synSetFromDocument];
 
                         // get similarity
                         double synSetsSimilarity = 2 * lcsDepth / (double)(categoryDepth + synSetFromDocumentDepth);

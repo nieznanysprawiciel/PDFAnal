@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.IO;
 
 using LAIR.ResourceAPIs.WordNet;
 
@@ -13,7 +14,19 @@ namespace PDFAnal
     {
         public static void Log(string log)
         {
+            //  console
             Debug.WriteLine(log);
+
+            //  file
+            System.IO.StreamWriter sw = System.IO.File.AppendText("log.txt");
+            try
+            {
+                sw.WriteLine(log);
+            }
+            finally
+            {
+                sw.Close();
+            }
         }
 
         public static string Words( SynSet synSet )
