@@ -70,6 +70,7 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Pair.cs" />
     <Compile Include="Classifier.cs" />
     <Compile Include="StopWord.cs" />
     <Compile Include="Stemmer.cs" />

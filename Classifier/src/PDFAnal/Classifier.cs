@@ -99,7 +99,8 @@ namespace PDFAnal
 
         private Dictionary<SynSet, int> FindSynsets(Dictionary<string, List<string>> stemmingDict )
         {
-            Dictionary<SynSet, int> resultingSynSetsDict = new Dictionary<SynSet, int>();   //  <SynSet, wordsCount>
+            //Dictionary<SynSet, int> synSetsWordsCountDict = new Dictionary<SynSet, int>();   //  <SynSet, wordsCount>
+            Dictionary<string, Pair<int, Set<SynSet>>> wordSynSetDict = new Dictionary<string, Pair<int, Set<SynSet>>>();
             int stemmedWordsThatHasSynSetsCount = 0;
             try
             {
@@ -110,24 +111,49 @@ namespace PDFAnal
                     var stemmedWord = stemmingDictionaryEntry.Key;
                     synSetSet = wordNetEngine.GetSynSets(stemmedWord, WordNetEngine.POS.Noun);
 
-                    if (!(synSetSet.Count == 0))
+                    if ( synSetSet.Count > 0 )
                     {
                         stemmedWordsThatHasSynSetsCount++;
 
-                        //  relate synSet with this stemmed word ( add / modify entry in Dictionary<SynSet, Set<string>> resultingSynSetsDict )
+                        //  wordSynSetDict
+                        /*
+                         * environment -> environ
+                         * environmental -> environment
+                         */
+                        //wordSynSetDict[stemmedWord] = new Pair<int, Set<SynSet>>(stemmingDictionaryEntry.Value.Count, synSetSet);
+                        Pair<int, Set<SynSet>> pair;
+                        if (wordSynSetDict.TryGetValue(stemmedWord, out pair))
+                        {
+                            pair.Second.ThrowExceptionOnDuplicateAdd = false;
+                            pair.Second.AddRange(synSetSet);
+                            pair.First += stemmingDictionaryEntry.Value.Count;
+                            wordSynSetDict[stemmedWord] = pair;
+                        }
+                        else
+                        {
+                            synSetSet.ThrowExceptionOnDuplicateAdd = false;
+                            wordSynSetDict[stemmedWord] = new Pair<int, Set<SynSet>>(stemmingDictionaryEntry.Value.Count, synSetSet);
+                        }
+
+
+
+
+                        /*
+                        //  synSetsWordsCountDict
                         foreach (SynSet synSet in synSetSet)
                         {
                             int wordCount;
-                            if (resultingSynSetsDict.TryGetValue(synSet, out wordCount))
+                            if (synSetsWordsCountDict.TryGetValue(synSet, out wordCount))
                             {
                                 wordCount += stemmingDictionaryEntry.Value.Count;
-                                resultingSynSetsDict[synSet] = wordCount;
+                                synSetsWordsCountDict[synSet] = wordCount;
                             }
                             else
                             {
-                                resultingSynSetsDict[synSet] = stemmingDictionaryEntry.Value.Count;
+                                synSetsWordsCountDict[synSet] = stemmingDictionaryEntry.Value.Count;
                             }
                         }
+                        */
                     }
                     else //  no synsets found for this stemmed word
                     {
@@ -143,28 +169,86 @@ namespace PDFAnal
                             var nonStemmedWord = nonStemmedWordCountKeyValue.Value;
                             synSetSet = wordNetEngine.GetSynSets(nonStemmedWord, WordNetEngine.POS.Noun);
 
-                            //XXX
+                            if ( synSetSet.Count > 0)
+                            {
+                                //  wordSynSetDict
+                                Debug.Assert(!wordSynSetDict.ContainsKey(nonStemmedWord));
+                                wordSynSetDict[nonStemmedWord] = new Pair<int, Set<SynSet>>(nonStemmedWordCountKeyValue.Count, synSetSet);
+                            }
+
+
+                            /*
+                            //  synSetsWordsCountDict
                             foreach (SynSet synSet in synSetSet)
                             {
                                 int wordCount;
-                                if (resultingSynSetsDict.TryGetValue(synSet, out wordCount))
+                                if (synSetsWordsCountDict.TryGetValue(synSet, out wordCount))
                                 {
                                     wordCount += nonStemmedWordCountKeyValue.Count;
-                                    resultingSynSetsDict[synSet] = wordCount;
+                                    synSetsWordsCountDict[synSet] = wordCount;
                                 }
                                 else
                                 {
-                                    resultingSynSetsDict[synSet] = nonStemmedWordCountKeyValue.Count;
+                                    synSetsWordsCountDict[synSet] = nonStemmedWordCountKeyValue.Count;
                                 }
                             }
+                            */
                         }
                     }
                 }
             }
             catch (Exception ex) { Debug.Assert(false, ex.ToString()); }    //  TODO show some info window
+
+            /*
+            foreach ( var wordSynSetDictEntry in wordSynSetDict )
+            {
+                var word = wordSynSetDictEntry.Key;
+                var wordCount = wordSynSetDictEntry.Value.First;
+                var synSetsSet = wordSynSetDictEntry.Value.Second;
+                Utility.Log("\t" + word);
+                int i = 0;
+                foreach (var synSet in synSetsSet)
+                {
+                    ++i;
+                    foreach( var singleWord in synSet.Words )
+                    {
+                        Utility.Log("\t\t" + i + ":" + singleWord);
+                    }
+                    Utility.Log("");
+                }
+            }
+            */
+
+            Dictionary<SynSet, int> synSetsWordsCountDict = new Dictionary<SynSet, int>();   //  <SynSet, wordsCount>
+            foreach (var wordSynSetDictEntry in wordSynSetDict)
+            {
+                var word = wordSynSetDictEntry.Key;
+                var wordCount = wordSynSetDictEntry.Value.First;
+                var synSetsSet = wordSynSetDictEntry.Value.Second;
+
+                Debug.Assert(synSetsSet.Count > 0);
+                int wordCountDivided = (int)Math.Ceiling( (double)wordCount / synSetsSet.Count );
+
+                Utility.Log("word " + word + " has " + wordCount + " occurancses and " + synSetsSet.Count + " synsets, so avg" + wordCountDivided + " for each synset");
+
+                foreach ( var synSet in synSetsSet ) {
+                    int synSetWordsCount;
+                    if (synSetsWordsCountDict.TryGetValue(synSet, out synSetWordsCount))
+                    {
+                        synSetWordsCount += wordCountDivided;
+                        synSetsWordsCountDict[synSet] = synSetWordsCount;
+                    }
+                    else
+                    {
+                        synSetsWordsCountDict[synSet] = wordCountDivided;
+                    }
+                }
+            }
+            
+            
             Utility.Log("stemmed words that has SynSets count: " + stemmedWordsThatHasSynSetsCount);
-            Utility.Log("synsets count: " + resultingSynSetsDict.Count);
-            return resultingSynSetsDict;
+            Utility.Log("synsets count: " + synSetsWordsCountDict.Count);
+            return synSetsWordsCountDict;
         }
 
         private void Classify(Dictionary<SynSet, int> resultingSynSetsDict)
@@ -250,6 +334,17 @@ namespace PDFAnal
             Utility.Log(automationWord + " synsets:" + automationSynSetSet.Count);
             Utility.Log(mechanizationWord + " synsets:" + mechanizationSynSetSet.Count);
             Utility.Log("sets union: " + synSetsUnionSet.Count);
+
+            SynSet telecommuncationSynSet = wordNetEngine.GetSynSet("Noun:6282431");
+            SynSet telephoneSynSet = wordNetEngine.GetSynSet("Noun:6282943");
+            List<WordNetEngine.SynSetRelation> synSetRelations = new List<WordNetEngine.SynSetRelation>();
+            synSetRelations.Add(WordNetEngine.SynSetRelation.Hypernym);
+            SynSet closestReachableSynSet = telecommuncationSynSet.GetClosestMutuallyReachableSynset(telephoneSynSet, synSetRelations);
+            Utility.Log("closest:");
+            foreach (var word in closestReachableSynSet.Words)
+            {
+                Utility.Log("\t" + word);
+            }
         }
 
     }
