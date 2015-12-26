@@ -4,6 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using org.pdfclown.files;
+using org.pdfclown.documents;
+using org.pdfclown.tools;
+using org.pdfclown.documents.contents;
+using org.pdfclown.documents.contents.objects;
 
 using LAIR.ResourceAPIs.WordNet;
 using LAIR.Collections.Generic;
@@ -15,35 +20,38 @@ namespace PDFAnal
         private WordNetEngine wordNetEngine;
         private WordNetSimilarityModel semanticSimilarityModel;
 
-        private Set<SynSet> categories;
+        public Set<SynSet> Categories { get; private set; }
 
         public Classifier()
         {
             wordNetEngine = new WordNetEngine(@"..\..\resources", false);
             semanticSimilarityModel = new WordNetSimilarityModel(wordNetEngine);
 
-            categories = new Set<SynSet>();
+            Categories = new Set<SynSet>();
             SynSet categoryTelecommuncationSynset = wordNetEngine.GetSynSet("Noun:6282431");    //  {telecommuncation, telecom}
             SynSet categoryMathSynset = wordNetEngine.GetSynSet("Noun:6009822");    //  mathematics, math, maths
-            categories.Add(categoryTelecommuncationSynset);
-            categories.Add(categoryMathSynset);
+            Categories.Add(categoryTelecommuncationSynset);
+            Categories.Add(categoryMathSynset);
         }
 
-        public void Classify(List<string> pageList)
+        public SynSet Classify(Document document)
         {
             //  create stemming dictionary
-            Dictionary<string, List<string>> stemmingDict = CreateStemmingDictionary(pageList);    //  <stemmedWord, list<word>>
+            Dictionary<string, List<string>> stemmingDict = CreateStemmingDictionary( document );    //  <stemmedWord, list<word>>
 
             //  find synsets
             Dictionary<SynSet, int> resultingSynSetsDict = FindSynsets(stemmingDict) ;   //  <SynSet, wordsCount>
 
             // lets classify it finally
-            Classify(resultingSynSetsDict);
+            return Classify(resultingSynSetsDict);
         }
 
-
-        private Dictionary<string, List<string>> CreateStemmingDictionary(List<string> pageList)
+        private Dictionary<string, List<string>> CreateStemmingDictionary(Document document)
         {
+            //  extract page list
+            List<string> pageList = ExtractPageList(document);
+
+            //  create stemming dictionary
             int allWordsCount = 0;
             int nonStopWordsCount = 0;
             int stopWordCount = 0;
@@ -251,7 +259,7 @@ namespace PDFAnal
             return synSetsWordsCountDict;
         }
 
-        private void Classify(Dictionary<SynSet, int> resultingSynSetsDict)
+        private SynSet Classify(Dictionary<SynSet, int> resultingSynSetsDict)
         {
 
             //  use top k synsets (that has most words in document)
@@ -280,7 +288,8 @@ namespace PDFAnal
             List<WordNetEngine.SynSetRelation> synSetRelations = new List<WordNetEngine.SynSetRelation>();
             synSetRelations.Add(WordNetEngine.SynSetRelation.Hypernym);
             Dictionary<SynSet, double> classificationResultDict = new Dictionary<SynSet, double>(); //  <categorySynSet, mysimiliartyBetwCatSynSetAndDoc>
-            foreach (var category in categories)
+            Pair<SynSet, double> bestCategory = null;
+            foreach (var category in Categories)
             {
                 string categoryText = Utility.Words(category);
                 double mySimilarity = 0.0d;
@@ -310,6 +319,20 @@ namespace PDFAnal
                         Utility.Log("\tcategory[" + categoryDepth + "] docSynSet[" + synSetFromDocumentDepth + "]");
                     }
                 }
+
+                //  pick best category
+                if (bestCategory == null)
+                {
+                    bestCategory = new Pair<SynSet, double>(category, mySimilarity);
+                }
+                else
+                {
+                    if (mySimilarity > bestCategory.Second)
+                    {
+                        bestCategory = new Pair<SynSet, double>(category, mySimilarity);
+                    }
+                }
+                
                 classificationResultDict.Add(category, mySimilarity);
             }
             Utility.Log("results:");
@@ -318,6 +341,22 @@ namespace PDFAnal
                 SynSet category = classificationResult.Key;
                 Utility.Log("\t" + Utility.Words(category) + ":" + classificationResult.Value);
             }
+            return bestCategory.First;
+        }
+
+        private List<string> ExtractPageList(Document document)
+        {
+            //  extract page list
+            List<string> pageList = new List<string>();
+            TextExtractor textExtractor = new TextExtractor();
+            foreach (var page in document.Pages)
+            {
+                var textStrings = textExtractor.Extract(page);
+                string pageContent = TextExtractor.ToString(textStrings);
+                //string[] ssize = content.Split(null);   //  splits by whitespace
+                pageList.Add(pageContent);
+            }
+            return pageList;
         }
 
         public void Test()
