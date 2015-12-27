@@ -58,6 +58,7 @@ namespace PDFAnal
         private void ProcessPDFBButton_Click(object sender, RoutedEventArgs e)
         {
             SetViewEnabled(false);
+            Utility.Log("Initiating analysis of document: " + DocumentNameLabel.Content);
             LabelWait.Content = "Analyzing document...";
             m_oWorker.RunWorkerAsync();
         }

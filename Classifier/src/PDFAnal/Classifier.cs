@@ -30,8 +30,34 @@ namespace PDFAnal
             Categories = new Set<SynSet>();
             SynSet categoryTelecommuncationSynset = wordNetEngine.GetSynSet("Noun:6282431");    //  {telecommuncation, telecom}
             SynSet categoryMathSynset = wordNetEngine.GetSynSet("Noun:6009822");    //  mathematics, math, maths
+            /*
+             data_mining Noun:13476407
+            algorithm Noun:5855965
+            electronics Noun:6108876
+            energy Noun:11472496
+            multimedia Noun:6272397	
+            security.security measures Noun:824977
+             */
+            SynSet dataMiningSynSet = wordNetEngine.GetSynSet("Noun:13476407");
+            SynSet algorithmSynSet = wordNetEngine.GetSynSet("Noun:5855965");
+            SynSet electronicsSynSet = wordNetEngine.GetSynSet("Noun:6108876");
+            SynSet energySynSet = wordNetEngine.GetSynSet("Noun:11472496");
+            SynSet multimediaSynSet = wordNetEngine.GetSynSet("Noun:6272397");
+            SynSet securitySynSet = wordNetEngine.GetSynSet("Noun:824977");
+            SynSet sculptureSynSet = wordNetEngine.GetSynSet("Noun:939472");
+            SynSet literatureSynSet = wordNetEngine.GetSynSet("Noun:6179204");
+
             Categories.Add(categoryTelecommuncationSynset);
             Categories.Add(categoryMathSynset);
+
+            Categories.Add(dataMiningSynSet);
+            Categories.Add(algorithmSynSet);
+            Categories.Add(electronicsSynSet);
+            Categories.Add(energySynSet);
+            Categories.Add(multimediaSynSet);
+            Categories.Add(securitySynSet);
+            Categories.Add(sculptureSynSet);
+            Categories.Add(literatureSynSet);
         }
 
         public SynSet Classify(Document document)
@@ -133,7 +159,7 @@ namespace PDFAnal
                         if (wordSynSetDict.TryGetValue(stemmedWord, out pair))
                         {
                             pair.Second.ThrowExceptionOnDuplicateAdd = false;
-                            pair.Second.AddRange(synSetSet);
+                            pair.Second.AddRange(synSetSet);    //  TODO isnt that just adding same set here?
                             pair.First += stemmingDictionaryEntry.Value.Count;
                             wordSynSetDict[stemmedWord] = pair;
                         }
@@ -177,11 +203,28 @@ namespace PDFAnal
                             var nonStemmedWord = nonStemmedWordCountKeyValue.Value;
                             synSetSet = wordNetEngine.GetSynSets(nonStemmedWord, WordNetEngine.POS.Noun);
 
-                            if ( synSetSet.Count > 0)
+                            if ( synSetSet.Count > 0 )
                             {
-                                //  wordSynSetDict
-                                Debug.Assert(!wordSynSetDict.ContainsKey(nonStemmedWord));
-                                wordSynSetDict[nonStemmedWord] = new Pair<int, Set<SynSet>>(nonStemmedWordCountKeyValue.Count, synSetSet);
+                                //  wordSynSetDictZ
+                                /*
+                                high-dimensional -> dimension
+                                dimension -> dimens
+                                */
+                                //wordSynSetDict[nonStemmedWord] = new Pair<int, Set<SynSet>>(nonStemmedWordCountKeyValue.Count, synSetSet);
+                                Pair<int, Set<SynSet>> pair;
+                                if (wordSynSetDict.TryGetValue(stemmedWord, out pair))
+                                {
+                                    pair.Second.ThrowExceptionOnDuplicateAdd = false;
+                                    pair.Second.AddRange(synSetSet);    //  TODO isnt that just adding same set here?
+                                    pair.First += stemmingDictionaryEntry.Value.Count;
+                                    wordSynSetDict[stemmedWord] = pair;
+                                }
+                                else
+                                {
+                                    synSetSet.ThrowExceptionOnDuplicateAdd = false;
+                                    wordSynSetDict[stemmedWord] = new Pair<int, Set<SynSet>>(stemmingDictionaryEntry.Value.Count, synSetSet);
+                                }
+
                             }
 
 
