@@ -12,6 +12,9 @@ using org.pdfclown.documents.contents.objects;
 using System.Drawing;
 using System.Diagnostics;
 using System.ComponentModel;
+using System.Windows.Controls;
+using System.IO;
+
 
 using LAIR.ResourceAPIs.WordNet;
 using LAIR.Collections.Generic;
@@ -34,11 +37,13 @@ namespace PDFAnal
 
             classifier = new Classifier();
             
+            /*
             //categories
             foreach( var category in classifier.Categories )
             {
                 ListBoxCategories.Items.Add(category);
             }
+            */
 
             ProcessPDFBButton.IsEnabled = false;
 
@@ -55,6 +60,15 @@ namespace PDFAnal
             m_oWorker.WorkerSupportsCancellation = false;
         }
 
+        public void updateCategories(List<object> categories)
+        {
+            ListBoxCategories.Items.Clear();
+            foreach (var category in categories)
+            {
+                ListBoxCategories.Items.Add(category);
+            }
+        }
+
         private void ProcessPDFBButton_Click(object sender, RoutedEventArgs e)
         {
             SetViewEnabled(false);
@@ -63,7 +77,7 @@ namespace PDFAnal
             m_oWorker.RunWorkerAsync();
         }
 
-        public void onClassificationFinish(SynSet category)
+        public void onClassificationFinish(Object category)
         {
             SetViewEnabled(true);
             LabelWait.Content = "";
@@ -87,7 +101,7 @@ namespace PDFAnal
             if( result == true )
             {
                 string fileName = fileDialog.FileName;
-                File file = new File( fileName );
+                org.pdfclown.files.File file = new org.pdfclown.files.File(fileName);
                 document = file.Document;
                 DocumentNameLabel.Content = System.IO.Path.GetFileName(fileName);
                 ProcessPDFBButton.IsEnabled = true;
@@ -113,7 +127,7 @@ namespace PDFAnal
         /// <param name="e"></param>
         void m_oWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            onClassificationFinish((SynSet)e.Result);
+            onClassificationFinish(e.Result);
         }
 
         /// <summary>
@@ -133,8 +147,32 @@ namespace PDFAnal
         /// <param name="e"></param>
         void m_oWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            SynSet category = classifier.Classify(document);
+            var category = classifier.Classify(document);
             e.Result = category;
+        }
+
+        private void ButtonAddCategory_Click(object sender, RoutedEventArgs e)
+        {
+            //  open file dialog
+            OpenFileDialog fileDialog = new OpenFileDialog();
+            fileDialog.DefaultExt = ".txt";
+            //  fileDialog.Filter = "PDF documents (.pdf)|*.pdf";
+            fileDialog.InitialDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
+
+            Nullable<bool> result = fileDialog.ShowDialog();
+            if (result == true)
+            {
+                string fileName = fileDialog.FileName;
+                string categoryDefinition = System.IO.File.ReadAllText(fileName);
+                string documentName = System.IO.Path.GetFileName(fileName);
+
+                string text = System.IO.File.ReadAllText(fileName);
+                classifier.AddCategory(documentName, categoryDefinition);
+            }
+
+            //  update View
+            updateCategories(classifier.CategoriesNew.Keys.ToList<object>());
+
         }
 
 /*        //  straszne dziadostwo jezeli chodzi o parsowanie
