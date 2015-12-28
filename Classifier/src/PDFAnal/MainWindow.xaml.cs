@@ -118,6 +118,7 @@ namespace PDFAnal
                 string fileName = fileDialog.FileName;
                 string categoryDefinition = System.IO.File.ReadAllText(fileName);
                 string documentName = System.IO.Path.GetFileName(fileName);
+                documentName = documentName.Replace(".txt", "");
                 classifier.AddCategory(documentName, categoryDefinition);
             }
 
@@ -186,6 +187,7 @@ namespace PDFAnal
             {
                 string categoryDefinition = System.IO.File.ReadAllText(filePath);
                 string documentName = System.IO.Path.GetFileName(filePath);
+                documentName = documentName.Replace(".txt", "");
                 classifier.AddCategory(documentName, categoryDefinition);
             }
         }
