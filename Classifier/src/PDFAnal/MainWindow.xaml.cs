@@ -29,13 +29,17 @@ namespace PDFAnal
         private Document document;
         private Classifier classifier;
 
-        BackgroundWorker m_oWorker;
+        private BackgroundWorker classifyDocumentBackgroundWorker;
+        private BackgroundWorker addPredefinedCategoriesBackgroundWorker;
 
         public MainWindow()
         {
             InitializeComponent();
 
+            ProcessPDFBButton.IsEnabled = false;
+
             classifier = new Classifier();
+            updateCategories(classifier.CategoriesNew.Keys.ToList<object>());
             
             /*
             //categories
@@ -45,44 +49,36 @@ namespace PDFAnal
             }
             */
 
-            ProcessPDFBButton.IsEnabled = false;
-
-            m_oWorker = new BackgroundWorker();
-
-            // Create a background worker thread that ReportsProgress &
-            // SupportsCancellation
-            // Hook up the appropriate events.
-            m_oWorker.DoWork += new DoWorkEventHandler(m_oWorker_DoWork);
+            //  create background workers
+            classifyDocumentBackgroundWorker = new BackgroundWorker();
+            classifyDocumentBackgroundWorker.DoWork += new DoWorkEventHandler(classifyDocumentBackgroundWorker_DoWork);
             //m_oWorker.ProgressChanged += new ProgressChangedEventHandler(m_oWorker_ProgressChanged);
-            m_oWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler
-                    (m_oWorker_RunWorkerCompleted);
-            m_oWorker.WorkerReportsProgress = false;
-            m_oWorker.WorkerSupportsCancellation = false;
+            classifyDocumentBackgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(classifyDocumentBackgroundWorker_RunWorkerCompleted);
+            classifyDocumentBackgroundWorker.WorkerReportsProgress = false;
+            classifyDocumentBackgroundWorker.WorkerSupportsCancellation = false;
+
+            addPredefinedCategoriesBackgroundWorker = new BackgroundWorker();
+            addPredefinedCategoriesBackgroundWorker.DoWork += new DoWorkEventHandler(addPredefinedCategoriesBackgroundWorker_DoWork);
+            //m_oWorker.ProgressChanged += new ProgressChangedEventHandler(m_oWorker_ProgressChanged);
+            addPredefinedCategoriesBackgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(addPredefinedCategoriesBackgroundWorker_RunWorkerCompleted);
+            addPredefinedCategoriesBackgroundWorker.WorkerReportsProgress = false;
+            addPredefinedCategoriesBackgroundWorker.WorkerSupportsCancellation = false;
         }
 
-        public void updateCategories(List<object> categories)
-        {
-            ListBoxCategories.Items.Clear();
-            foreach (var category in categories)
-            {
-                ListBoxCategories.Items.Add(category);
-            }
-        }
+
+        #region button clicks
 
         private void ProcessPDFBButton_Click(object sender, RoutedEventArgs e)
         {
+            if (document == null)
+            {
+                LabelWait.Content = "Null doc";
+                return;
+            }
             SetViewEnabled(false);
             Utility.Log("Initiating analysis of document: " + DocumentNameLabel.Content);
             LabelWait.Content = "Analyzing document...";
-            m_oWorker.RunWorkerAsync();
-        }
-
-        public void onClassificationFinish(Object category)
-        {
-            SetViewEnabled(true);
-            LabelWait.Content = "";
-            LabelClassifiedAs.Content = "classified as:";
-            LabelCategoryName.Content = category.ToString();
+            classifyDocumentBackgroundWorker.RunWorkerAsync();
         }
 
         private void LoadPDFButton_Click(object sender, RoutedEventArgs e)
@@ -108,11 +104,32 @@ namespace PDFAnal
             }
         }
 
-        private void SetViewEnabled(bool enabled)
+        private void ButtonAddCategory_Click(object sender, RoutedEventArgs e)
         {
-            ProcessPDFBButton.IsEnabled = enabled;
-            LoadPDFButton.IsEnabled = enabled;
-            TestButton.IsEnabled = enabled;
+            //  open file dialog
+            OpenFileDialog fileDialog = new OpenFileDialog();
+            fileDialog.DefaultExt = ".txt";
+            //  fileDialog.Filter = "PDF documents (.pdf)|*.pdf";
+            fileDialog.InitialDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
+
+            Nullable<bool> result = fileDialog.ShowDialog();
+            if (result == true)
+            {
+                string fileName = fileDialog.FileName;
+                string categoryDefinition = System.IO.File.ReadAllText(fileName);
+                string documentName = System.IO.Path.GetFileName(fileName);
+                classifier.AddCategory(documentName, categoryDefinition);
+            }
+
+            //  update View
+            updateCategories(classifier.CategoriesNew.Keys.ToList<object>());
+
+        }
+
+        private void ButtonLoadPredefinedCategories_Click(object sender, RoutedEventArgs e)
+        {
+            SetViewEnabled(false);
+            addPredefinedCategoriesBackgroundWorker.RunWorkerAsync();
         }
 
         private void Test_Click(object sender, RoutedEventArgs e)
@@ -120,12 +137,16 @@ namespace PDFAnal
             classifier.Test();
         }
 
+        #endregion
+
+        #region background workers
+
         /// <summary>
         /// On completed do the appropriate task
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void m_oWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        void classifyDocumentBackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             onClassificationFinish(e.Result);
         }
@@ -141,41 +162,75 @@ namespace PDFAnal
 
         /// <summary>
         /// Time consuming operations go here </br>
-        /// i.e. Database operations,Reporting
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        void m_oWorker_DoWork(object sender, DoWorkEventArgs e)
+        void classifyDocumentBackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             var category = classifier.Classify(document);
             e.Result = category;
         }
 
-        private void ButtonAddCategory_Click(object sender, RoutedEventArgs e)
+        void addPredefinedCategoriesBackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            //  open file dialog
-            OpenFileDialog fileDialog = new OpenFileDialog();
-            fileDialog.DefaultExt = ".txt";
-            //  fileDialog.Filter = "PDF documents (.pdf)|*.pdf";
-            fileDialog.InitialDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
-
-            Nullable<bool> result = fileDialog.ShowDialog();
-            if (result == true)
-            {
-                string fileName = fileDialog.FileName;
-                string categoryDefinition = System.IO.File.ReadAllText(fileName);
-                string documentName = System.IO.Path.GetFileName(fileName);
-
-                string text = System.IO.File.ReadAllText(fileName);
-                classifier.AddCategory(documentName, categoryDefinition);
-            }
-
             //  update View
             updateCategories(classifier.CategoriesNew.Keys.ToList<object>());
+            SetViewEnabled(true);
+        }
+
+        void addPredefinedCategoriesBackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
+        {
+            //  load categories from categories directory
+            string[] filePaths = Directory.GetFiles(@"..\categories\", "*.txt");
+            foreach (string filePath in filePaths)
+            {
+                string categoryDefinition = System.IO.File.ReadAllText(filePath);
+                string documentName = System.IO.Path.GetFileName(filePath);
+                classifier.AddCategory(documentName, categoryDefinition);
+            }
+        }
+
+        #endregion
+
+        #region view manipulations
+
+        public void updateCategories(List<object> categories)
+        {
+            ListBoxCategories.Items.Clear();
+            foreach (var category in categories)
+            {
+                ListBoxCategories.Items.Add(category);
+            }
+        }
+
+        public void onClassificationFinish(Object category)
+        {
+            SetViewEnabled(true);
+            LabelWait.Content = "";
+            if (category != null)
+            {
+                LabelClassifiedAs.Content = "classified as:";
+                LabelCategoryName.Content = category.ToString();
+            }
+            else
+            {
+                LabelClassifiedAs.Content = "classification failed";
+            }
 
         }
 
-/*        //  straszne dziadostwo jezeli chodzi o parsowanie
+        private void SetViewEnabled(bool enabled)
+        {
+            ProcessPDFBButton.IsEnabled = enabled;
+            LoadPDFButton.IsEnabled = enabled;
+            TestButton.IsEnabled = enabled;
+            ButtonAddCategory.IsEnabled = enabled;
+            ButtonLoadPredefinedCategories.IsEnabled = enabled;
+        }
+        #endregion
+
+        /*
+        //  straszne dziadostwo jezeli chodzi o parsowanie
         //extract(new ContentScanner(page));
         private void extract(ContentScanner level)
         {
@@ -198,6 +253,6 @@ namespace PDFAnal
               }
             }
         }
- */
+        */
     }
 }

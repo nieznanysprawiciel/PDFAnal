@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.IO;
 using org.pdfclown.files;
 using org.pdfclown.documents;
 using org.pdfclown.tools;
@@ -56,6 +57,18 @@ namespace PDFAnal
             */
 
             CategoriesNew = new Dictionary<string, Pair<Dictionary<SynSet, int>, int>>();
+
+            /*
+            //  load categories
+            string[] filePaths = Directory.GetFiles(@"..\categories\", "*.txt");
+            foreach (string filePath in filePaths)
+            {
+                string categoryDefinition = System.IO.File.ReadAllText(filePath);
+                string documentName = System.IO.Path.GetFileName(filePath);
+                AddCategory(documentName, categoryDefinition);
+            }
+            */
+            
         }
 
         public void AddCategory(string name, string categoryDefiniction)
@@ -80,13 +93,18 @@ namespace PDFAnal
             }
 
             //  add category
-            CategoriesNew.Add(name, new Pair<Dictionary<SynSet, int>, int>(resultingSynSetsDict, importantWordsCont));
+            CategoriesNew[name] = new Pair<Dictionary<SynSet, int>, int>(resultingSynSetsDict, importantWordsCont);
         }
 
         public object Classify(Document document)
         {
             //  extract word list
             List<string> wordList = ExtractWords( document );
+
+            if (wordList.Count == 0)
+            {
+                return null;
+            }
 
             //  create stemming dictionary
             Dictionary<string, List<string>> stemmingDict = CreateStemmingDictionary( wordList );    //  <stemmedWord, list<word>>
@@ -320,7 +338,7 @@ namespace PDFAnal
                 Debug.Assert(synSetsSet.Count > 0);
                 int wordCountDivided = (int)Math.Ceiling( (double)wordCount / synSetsSet.Count );
 
-                Utility.Log("word " + word + " has " + wordCount + " occurancses and " + synSetsSet.Count + " synsets, so avg" + wordCountDivided + " for each synset");
+                //Utility.Log("word " + word + " has " + wordCount + " occurances and " + synSetsSet.Count + " synsets, so avg" + wordCountDivided + " for each synset");
 
                 foreach ( var synSet in synSetsSet ) {
                     int synSetWordsCount;
@@ -429,19 +447,22 @@ namespace PDFAnal
         }
         */
 
-        private object ClassifyFinally(Dictionary<SynSet, int> resultingSynSetsDict)
+        private object ClassifyFinally(Dictionary<SynSet, int> documentSynSetsDict)
         {
             //  count doc words
             int docWordCount = 0;
-            foreach (var x in resultingSynSetsDict) {
+            foreach (var x in documentSynSetsDict) {
                 docWordCount += x.Value;
             }
 
             Pair<string, double> bestCategory = null;
-            Set<SynSet> objectSynSetsSet = new Set<SynSet>(resultingSynSetsDict.Keys.ToList());
+            //Set<SynSet> objectSynSetsSet = new Set<SynSet>(resultingSynSetsDict.Keys.ToList());
             
             foreach (var category in CategoriesNew)
             {
+                string categoryName = category.Key;
+
+                /*
                 Set<SynSet> categorySynSetsSet = new Set<SynSet>(category.Value.First.Keys.ToList());
                 Set<SynSet> synSetsIntersection = categorySynSetsSet;
                 synSetsIntersection.IntersectWith(objectSynSetsSet);
@@ -451,7 +472,6 @@ namespace PDFAnal
                 {
                     continue;
                 }
-                string categoryName = category.Key;
                 Utility.Log(categoryName + " has " + commonSynSetsCount + " common synsets with this doc");
 
                 //  gather synset data from category and document
@@ -460,6 +480,7 @@ namespace PDFAnal
                 {
                     temp.Add(commonSynSet, new Pair<int, int>(category.Value.First[commonSynSet], resultingSynSetsDict[commonSynSet]));
                 }
+                
 
                 //  use top k synsets
                 int k = 4;
@@ -468,46 +489,143 @@ namespace PDFAnal
                 tempList.Sort(
                     delegate(KeyValuePair<SynSet, Pair<int, int>> firstPair, KeyValuePair<SynSet, Pair<int, int>> nextPair)
                     {
-                        /*
-                        Debug.Assert(firstPair.Value.First > 0 && firstPair.Value.Second > 0 && nextPair.Value.First > 0 && nextPair.Value.Second > 0);
-                        double firstCosineSimilarity = (double)(firstPair.Value.First * firstPair.Value.Second) / (firstPair.Value.First * firstPair.Value.Second);
-                        double nextCosineSimilarity = (double)(nextPair.Value.First * nextPair.Value.Second) / (nextPair.Value.First * nextPair.Value.Second);
-                        Debug.Assert(firstCosineSimilarity <= 1.0d && firstCosineSimilarity >= -1.0d && nextCosineSimilarity <= 1.0d && nextCosineSimilarity >= -1.0d);
-                        return nextCosineSimilarity.CompareTo(firstCosineSimilarity);
-                        */
+                        
+                        //Debug.Assert(firstPair.Value.First > 0 && firstPair.Value.Second > 0 && nextPair.Value.First > 0 && nextPair.Value.Second > 0);
+                        //double firstCosineSimilarity = (double)(firstPair.Value.First * firstPair.Value.Second) / (firstPair.Value.First * firstPair.Value.Second);
+                        //double nextCosineSimilarity = (double)(nextPair.Value.First * nextPair.Value.Second) / (nextPair.Value.First * nextPair.Value.Second);
+                        //Debug.Assert(firstCosineSimilarity <= 1.0d && firstCosineSimilarity >= -1.0d && nextCosineSimilarity <= 1.0d && nextCosineSimilarity >= -1.0d);
+                        //return nextCosineSimilarity.CompareTo(firstCosineSimilarity);
+                        
                         return (nextPair.Value.First * nextPair.Value.Second).CompareTo(firstPair.Value.First * firstPair.Value.Second);
                     }
                 );
+                */
+
+                //  use top k synsets
+                int k = 10;
+                Utility.Log("top " + k + ": ");
+                List<KeyValuePair<SynSet, int>> categoryTempList = category.Value.First.ToList();
+                categoryTempList.Sort(
+                    delegate(KeyValuePair<SynSet, int> firstPair, KeyValuePair<SynSet, int> nextPair)
+                    {
+
+                        //Debug.Assert(firstPair.Value.First > 0 && firstPair.Value.Second > 0 && nextPair.Value.First > 0 && nextPair.Value.Second > 0);
+                        //double firstCosineSimilarity = (double)(firstPair.Value.First * firstPair.Value.Second) / (firstPair.Value.First * firstPair.Value.Second);
+                        //double nextCosineSimilarity = (double)(nextPair.Value.First * nextPair.Value.Second) / (nextPair.Value.First * nextPair.Value.Second);
+                        //Debug.Assert(firstCosineSimilarity <= 1.0d && firstCosineSimilarity >= -1.0d && nextCosineSimilarity <= 1.0d && nextCosineSimilarity >= -1.0d);
+                        //return nextCosineSimilarity.CompareTo(firstCosineSimilarity);
+
+                        return nextPair.Value.CompareTo(firstPair.Value);
+                    }
+                );
+
+                List<KeyValuePair<SynSet, int>> documentTempList = documentSynSetsDict.ToList();
+                documentTempList.Sort(
+                    delegate(KeyValuePair<SynSet, int> firstPair, KeyValuePair<SynSet, int> nextPair)
+                    {
+
+                        //Debug.Assert(firstPair.Value.First > 0 && firstPair.Value.Second > 0 && nextPair.Value.First > 0 && nextPair.Value.Second > 0);
+                        //double firstCosineSimilarity = (double)(firstPair.Value.First * firstPair.Value.Second) / (firstPair.Value.First * firstPair.Value.Second);
+                        //double nextCosineSimilarity = (double)(nextPair.Value.First * nextPair.Value.Second) / (nextPair.Value.First * nextPair.Value.Second);
+                        //Debug.Assert(firstCosineSimilarity <= 1.0d && firstCosineSimilarity >= -1.0d && nextCosineSimilarity <= 1.0d && nextCosineSimilarity >= -1.0d);
+                        //return nextCosineSimilarity.CompareTo(firstCosineSimilarity);
+
+                        return nextPair.Value.CompareTo(firstPair.Value);
+                    }
+                );
+
 
                 // compute category - document cosine similarity
+                Set<SynSet> alreadyProcessedSynSets = new Set<SynSet>();    //  TODO reuse it with all categories
+
                 double categoryDocumentCosineSimilarityNumerator = 0.0d;
                 double categoryDocumentCosineSimilarityDenumerator1 = 0.0d;
                 double categoryDocumentCosineSimilarityDenumerator2 = 0.0d;
-                for (int i = 0; i < Math.Min(k, tempList.Count); ++i)
-                {
-                    var keyValuePair = tempList[i];
 
+                // category SynSets
+                int count = 0;
+                foreach (var categorySynSetInfo in categoryTempList)//category.Value.First)
+                {
+                    ++count;
+                    if (count > k)
+                    {
+                        break;
+                    }
+
+                    var categorySynSet = categorySynSetInfo.Key;
+                    int documentSynSetWordCount;
+                    if (!documentSynSetsDict.TryGetValue(categorySynSet, out documentSynSetWordCount))
+                    {
+                        documentSynSetWordCount = 0;
+                    }
+                    var categorySynSetWordCount = categorySynSetInfo.Value;
                     int cateogryWordCount = category.Value.Second;
 
                     //  compute cosine similarity
-                    categoryDocumentCosineSimilarityNumerator += (double)(keyValuePair.Value.First * keyValuePair.Value.Second) / (cateogryWordCount * docWordCount);
-                    categoryDocumentCosineSimilarityDenumerator1 += (double)(keyValuePair.Value.First * keyValuePair.Value.First) / (cateogryWordCount * cateogryWordCount);
-                    categoryDocumentCosineSimilarityDenumerator2 += (double)(keyValuePair.Value.Second * keyValuePair.Value.Second) / (docWordCount * docWordCount) ;
+                    categoryDocumentCosineSimilarityNumerator += (double)(categorySynSetWordCount * documentSynSetWordCount) / (cateogryWordCount * docWordCount);
+                    categoryDocumentCosineSimilarityDenumerator1 += (double)(categorySynSetWordCount * categorySynSetWordCount) / (cateogryWordCount * cateogryWordCount);
+                    categoryDocumentCosineSimilarityDenumerator2 += (double)(documentSynSetWordCount * documentSynSetWordCount) / (docWordCount * docWordCount) ;
+
+                    alreadyProcessedSynSets.Add(categorySynSet);
 
                     //  log
-                    Utility.Log("----->");
-                    Utility.Log("\t" + keyValuePair.Value.First + "/" + keyValuePair.Value.Second + " words : [" + categoryDocumentCosineSimilarityNumerator + "/ sqrt(" + categoryDocumentCosineSimilarityDenumerator1 + ")sqrt(" + categoryDocumentCosineSimilarityDenumerator2 + ")]" );
+                    Utility.Log("--- category synset " + count + " -->");
+                    Utility.Log("\t" + categorySynSetWordCount + "/" + documentSynSetWordCount + " words " /* : [" + categoryDocumentCosineSimilarityNumerator + "/ sqrt(" + categoryDocumentCosineSimilarityDenumerator1 + ")sqrt(" + categoryDocumentCosineSimilarityDenumerator2 + ")]"*/);
                     Utility.Log("\tsynset: ");
-                    foreach (var word in keyValuePair.Key.Words)
+                    foreach (var word in categorySynSet.Words)
                     {
                         Utility.Log("\t\t" + word);
                     }
                 }
+
+                //  document synSets
+                count = 0;
+                foreach ( var documentSynSetInfo in documentTempList )
+                {
+                    ++count;
+                    if (count > k)
+                    {
+                        break;
+                    }
+
+                    var documentSynSet = documentSynSetInfo.Key;
+
+                    if (alreadyProcessedSynSets.Contains(documentSynSet))
+                    {
+                        continue;
+                    }
+
+                    int categorySynSetWordCount;
+                    if (!category.Value.First.TryGetValue(documentSynSet, out categorySynSetWordCount))
+                    {
+                        categorySynSetWordCount = 0;
+                    }
+                    int cateogryWordCount = category.Value.Second;
+                    var documentSynSetWordCount = documentSynSetInfo.Value;
+
+                    //  compute cosine similarity
+                    categoryDocumentCosineSimilarityNumerator += (double)(categorySynSetWordCount * documentSynSetWordCount) / (cateogryWordCount * docWordCount);
+                    categoryDocumentCosineSimilarityDenumerator1 += (double)(categorySynSetWordCount * categorySynSetWordCount) / (cateogryWordCount * cateogryWordCount);
+                    categoryDocumentCosineSimilarityDenumerator2 += (double)(documentSynSetWordCount * documentSynSetWordCount) / (docWordCount * docWordCount);
+
+                    alreadyProcessedSynSets.Add(documentSynSet);
+
+                    //  log
+                    Utility.Log("--- document synset " + count + " -->");
+                    Utility.Log("\t" + categorySynSetWordCount + "/" + documentSynSetWordCount + " words " /* : [" + categoryDocumentCosineSimilarityNumerator + "/ sqrt(" + categoryDocumentCosineSimilarityDenumerator1 + ")sqrt(" + categoryDocumentCosineSimilarityDenumerator2 + ")]"*/);
+                    Utility.Log("\tsynset: ");
+                    foreach (var word in documentSynSet.Words)
+                    {
+                        Utility.Log("\t\t" + word);
+                    }
+
+                }
+
                 double categoryDocumentCosineSimilarityDenominator = Math.Sqrt(categoryDocumentCosineSimilarityDenumerator1) * Math.Sqrt(categoryDocumentCosineSimilarityDenumerator2);
                 Debug.Assert(categoryDocumentCosineSimilarityDenominator > 0.0d);
                 double categoryDocumentCosineSimilarity = (double) categoryDocumentCosineSimilarityNumerator / categoryDocumentCosineSimilarityDenominator;
 
-                Utility.Log("similarity:" + categoryDocumentCosineSimilarity);
+                Utility.Log(categoryName + "similarity:" + categoryDocumentCosineSimilarity);
 
                 //  pick best category
                 if (bestCategory == null)
@@ -516,10 +634,10 @@ namespace PDFAnal
                 }
                 else
                 {
-                    if (commonSynSetsCount > bestCategory.Second)
+                    if (categoryDocumentCosineSimilarity > bestCategory.Second)
                     {
                         bestCategory.First = categoryName;
-                        bestCategory.Second = commonSynSetsCount;
+                        bestCategory.Second = categoryDocumentCosineSimilarity;
                     }
                 }
 
@@ -533,12 +651,19 @@ namespace PDFAnal
             //  extract page list
             List<string> pageList = new List<string>();
             TextExtractor textExtractor = new TextExtractor();
-            foreach (var page in document.Pages)
+            try {
+                foreach (var page in document.Pages)
+                {
+
+                    var textStrings = textExtractor.Extract(page);
+                    string pageContent = TextExtractor.ToString(textStrings);
+                    //string[] ssize = content.Split(null);   //  splits by whitespace
+                    pageList.Add(pageContent);
+                }
+            }
+            catch (Exception e)
             {
-                var textStrings = textExtractor.Extract(page);
-                string pageContent = TextExtractor.ToString(textStrings);
-                //string[] ssize = content.Split(null);   //  splits by whitespace
-                pageList.Add(pageContent);
+                Utility.Log("Blad");
             }
             return pageList;
         }

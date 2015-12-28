@@ -601,7 +601,7 @@ namespace PDFAnal
                 }
             }   //  for
             string stemmedWord = s.ToString();
-            Utility.Log(word + " -> " + stemmedWord);
+            //Utility.Log(word + " -> " + stemmedWord);
             return stemmedWord;
         }
     }
