@@ -32,6 +32,8 @@ namespace PDFAnal
         private BackgroundWorker classifyDocumentBackgroundWorker;
         private BackgroundWorker addPredefinedCategoriesBackgroundWorker;
 
+        private bool predefinedCategoriesLoaded = false;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -189,6 +191,7 @@ namespace PDFAnal
         {
             //  update View
             updateCategories(classifier.CategoriesNew.Keys.ToList<object>());
+            predefinedCategoriesLoaded = true;
             SetViewEnabled(true);
         }
 
@@ -248,11 +251,11 @@ namespace PDFAnal
 
         private void SetViewEnabled(bool enabled)
         {
-            ProcessPDFBButton.IsEnabled = enabled;
+            ProcessPDFBButton.IsEnabled = enabled && document != null;
             LoadPDFButton.IsEnabled = enabled;
             TestButton.IsEnabled = enabled;
             ButtonAddCategory.IsEnabled = enabled;
-            ButtonLoadPredefinedCategories.IsEnabled = enabled;
+            ButtonLoadPredefinedCategories.IsEnabled = enabled && !predefinedCategoriesLoaded;
         }
         #endregion
 
