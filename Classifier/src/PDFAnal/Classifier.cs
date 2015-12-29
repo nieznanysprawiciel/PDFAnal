@@ -30,45 +30,7 @@ namespace PDFAnal
             wordNetEngine = new WordNetEngine(@"..\..\resources", false);
             semanticSimilarityModel = new WordNetSimilarityModel(wordNetEngine);
 
-            /*
-            Categories = new Set<SynSet>();
-            SynSet categoryTelecommuncationSynset = wordNetEngine.GetSynSet("Noun:6282431");    //  {telecommuncation, telecom}
-            SynSet categoryMathSynset = wordNetEngine.GetSynSet("Noun:6009822");    //  mathematics, math, maths
-            SynSet dataMiningSynSet = wordNetEngine.GetSynSet("Noun:13476407");
-            SynSet algorithmSynSet = wordNetEngine.GetSynSet("Noun:5855965");
-            SynSet electronicsSynSet = wordNetEngine.GetSynSet("Noun:6108876");
-            SynSet energySynSet = wordNetEngine.GetSynSet("Noun:11472496");
-            SynSet multimediaSynSet = wordNetEngine.GetSynSet("Noun:6272397");
-            SynSet securitySynSet = wordNetEngine.GetSynSet("Noun:824977");
-            SynSet sculptureSynSet = wordNetEngine.GetSynSet("Noun:939472");
-            SynSet literatureSynSet = wordNetEngine.GetSynSet("Noun:6179204");
-
-            Categories.Add(categoryTelecommuncationSynset);
-            Categories.Add(categoryMathSynset);
-
-            Categories.Add(dataMiningSynSet);
-            Categories.Add(algorithmSynSet);
-            Categories.Add(electronicsSynSet);
-            Categories.Add(energySynSet);
-            Categories.Add(multimediaSynSet);
-            Categories.Add(securitySynSet);
-            Categories.Add(sculptureSynSet);
-            Categories.Add(literatureSynSet);
-            */
-
             CategoriesNew = new Dictionary<string, Pair<Dictionary<SynSet, int>, int>>();
-
-            /*
-            //  load categories
-            string[] filePaths = Directory.GetFiles(@"..\categories\", "*.txt");
-            foreach (string filePath in filePaths)
-            {
-                string categoryDefinition = System.IO.File.ReadAllText(filePath);
-                string documentName = System.IO.Path.GetFileName(filePath);
-                AddCategory(documentName, categoryDefinition);
-            }
-            */
-            
         }
 
         public void AddCategory(string name, string categoryDefiniction)
@@ -457,7 +419,8 @@ namespace PDFAnal
 
             Pair<string, double> bestCategory = null;
             //Set<SynSet> objectSynSetsSet = new Set<SynSet>(resultingSynSetsDict.Keys.ToList());
-            
+            var resultList = new List<Pair<object, double>>();
+
             foreach (var category in CategoriesNew)
             {
                 string categoryName = category.Key;
@@ -508,13 +471,6 @@ namespace PDFAnal
                 categoryTempList.Sort(
                     delegate(KeyValuePair<SynSet, int> firstPair, KeyValuePair<SynSet, int> nextPair)
                     {
-
-                        //Debug.Assert(firstPair.Value.First > 0 && firstPair.Value.Second > 0 && nextPair.Value.First > 0 && nextPair.Value.Second > 0);
-                        //double firstCosineSimilarity = (double)(firstPair.Value.First * firstPair.Value.Second) / (firstPair.Value.First * firstPair.Value.Second);
-                        //double nextCosineSimilarity = (double)(nextPair.Value.First * nextPair.Value.Second) / (nextPair.Value.First * nextPair.Value.Second);
-                        //Debug.Assert(firstCosineSimilarity <= 1.0d && firstCosineSimilarity >= -1.0d && nextCosineSimilarity <= 1.0d && nextCosineSimilarity >= -1.0d);
-                        //return nextCosineSimilarity.CompareTo(firstCosineSimilarity);
-
                         return nextPair.Value.CompareTo(firstPair.Value);
                     }
                 );
@@ -523,13 +479,6 @@ namespace PDFAnal
                 documentTempList.Sort(
                     delegate(KeyValuePair<SynSet, int> firstPair, KeyValuePair<SynSet, int> nextPair)
                     {
-
-                        //Debug.Assert(firstPair.Value.First > 0 && firstPair.Value.Second > 0 && nextPair.Value.First > 0 && nextPair.Value.Second > 0);
-                        //double firstCosineSimilarity = (double)(firstPair.Value.First * firstPair.Value.Second) / (firstPair.Value.First * firstPair.Value.Second);
-                        //double nextCosineSimilarity = (double)(nextPair.Value.First * nextPair.Value.Second) / (nextPair.Value.First * nextPair.Value.Second);
-                        //Debug.Assert(firstCosineSimilarity <= 1.0d && firstCosineSimilarity >= -1.0d && nextCosineSimilarity <= 1.0d && nextCosineSimilarity >= -1.0d);
-                        //return nextCosineSimilarity.CompareTo(firstCosineSimilarity);
-
                         return nextPair.Value.CompareTo(firstPair.Value);
                     }
                 );
@@ -627,6 +576,9 @@ namespace PDFAnal
 
                 Utility.Log(categoryName + "similarity:" + categoryDocumentCosineSimilarity);
 
+                //  add category sim score to result list
+                resultList.Add(new Pair<object, double>(categoryName, categoryDocumentCosineSimilarity));
+
                 //  pick best category
                 if (bestCategory == null)
                 {
@@ -643,7 +595,11 @@ namespace PDFAnal
 
             }
 
-            return bestCategory.First;  //  return best category name
+            resultList.Sort(delegate(Pair<object, double> first, Pair<object, double> next) {
+                return next.Second.CompareTo(first.Second);
+            });
+
+            return resultList;//   bestCategory.First;  //  return best category name
         }
 
         private List<string> ExtractPageList(Document document)

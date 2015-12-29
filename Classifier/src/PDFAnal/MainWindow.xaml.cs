@@ -36,7 +36,13 @@ namespace PDFAnal
         {
             InitializeComponent();
 
+            //  gui
             ProcessPDFBButton.IsEnabled = false;
+            
+            string[] predefinedCategoriesFilePathsArr = predefinedCategoriesFilePaths();
+            int predefCatCount = predefinedCategoriesFilePathsArr.Length;
+            ButtonLoadPredefinedCategories.Content = ButtonLoadPredefinedCategories.Content + " (" + predefCatCount + ")";
+
 
             classifier = new Classifier();
             updateCategories(classifier.CategoriesNew.Keys.ToList<object>());
@@ -70,22 +76,29 @@ namespace PDFAnal
 
         private void ProcessPDFBButton_Click(object sender, RoutedEventArgs e)
         {
+            /*
             if (document == null)
             {
                 LabelWait.Content = "Null doc";
                 return;
             }
+            */
             SetViewEnabled(false);
             Utility.Log("Initiating analysis of document: " + DocumentNameLabel.Content);
-            LabelWait.Content = "Analyzing document...";
+            
+            //LabelWait.Content = "Analyzing document...";
+            LabelClassifiedAs.Content = "Analyzing document...";
+
             classifyDocumentBackgroundWorker.RunWorkerAsync();
         }
 
         private void LoadPDFButton_Click(object sender, RoutedEventArgs e)
         {
             //  clear labels
-            LabelCategoryName.Content = "";
+            //LabelCategoryName.Content = "";
+            //LabelClassifiedAs.Content = "";
             LabelClassifiedAs.Content = "";
+            ListBoxClassificationResult.Items.Clear();
 
             //  open file dialog
             OpenFileDialog fileDialog = new OpenFileDialog();
@@ -182,7 +195,7 @@ namespace PDFAnal
         void addPredefinedCategoriesBackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             //  load categories from categories directory
-            string[] filePaths = Directory.GetFiles(@"..\categories\", "*.txt");
+            string[] filePaths = predefinedCategoriesFilePaths();
             foreach (string filePath in filePaths)
             {
                 string categoryDefinition = System.IO.File.ReadAllText(filePath);
@@ -190,6 +203,11 @@ namespace PDFAnal
                 documentName = documentName.Replace(".txt", "");
                 classifier.AddCategory(documentName, categoryDefinition);
             }
+        }
+
+        private string[] predefinedCategoriesFilePaths()
+        {
+            return Directory.GetFiles(@"..\categories\", "*.txt");
         }
 
         #endregion
@@ -208,11 +226,18 @@ namespace PDFAnal
         public void onClassificationFinish(Object category)
         {
             SetViewEnabled(true);
-            LabelWait.Content = "";
+            //LabelWait.Content = "";
             if (category != null)
             {
                 LabelClassifiedAs.Content = "classified as:";
-                LabelCategoryName.Content = category.ToString();
+
+                int i = 0;
+                foreach (var classResult in (List<Pair<object, double>>)category)
+                {
+                    ++i;
+                    ListBoxClassificationResult.Items.Add(i + ". " + classResult.First + "\t\t\t\t" + classResult.Second);
+                }
+                //LabelCategoryName.Content = category.ToString();
             }
             else
             {
