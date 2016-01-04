@@ -4,27 +4,44 @@ import urllib2
 from bs4 import BeautifulSoup
 import re
 import os
+from cookielib import CookieJar
 
-
-# Loads content of the web page using SOKS5 proxy
-def loadWebPage( address ):
+def prapareWeb():
 	socks.setdefaultproxy( socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 12345 )
 	socket.socket = socks.socksocket
 
+	cookieEater = CookieJar()
+	webOpener = urllib2.build_opener( urllib2.HTTPCookieProcessor( cookieEater ) )
+
+	return webOpener
+
+
+# Loads content of the web page using SOKS5 proxy
+def loadWebPage( address, cookies = '' ):
 	data = ''
 	try:
-		response = urllib2.urlopen( address )
+		opener = urllib2.build_opener()
+		if cookies:
+			opener.addheaders.append( ( 'Cookie', cookies ) )
+
+		response = opener.open( address )
 
 		chunk = True
 		while chunk:
 			chunk = response.read()
 			data += chunk
-		response.close()
 	except IOError:
 		print 'can\'t open', address
 		return ''
 
-	return data
+	returnValue = {}
+	returnValue['cookies'] = response.info().getheader('Set-Cookie')
+	returnValue['data'] = data
+	response.close()
+
+	print returnValue['cookies']
+
+	return returnValue
 
 # Makes list of links to pdfs
 def extractLinksFromSite( htmlContent ):
@@ -39,8 +56,11 @@ def extractLinksFromSite( htmlContent ):
 
 
 # Loads content of web page and writes it to specyfied file
-def loadSiteToFile( address, fileName ):
-	htmlContent = loadWebPage( address )
+def loadSiteToFile( address, fileName, cookies = '' ):
+	response = loadWebPage( address, cookies )
+
+	htmlContent = response['data']
+	cookies = response['cookies']
 
 	if not htmlContent:
 		return False
@@ -52,13 +72,15 @@ def loadSiteToFile( address, fileName ):
 		return True
 
 
-def getPDFLinks( links ):
+def getPDFLinks( links, cookies = '' ):
 
 	pdfLinks = []
 	for link in links:
 		print "Processing link: [" + link + "]"
 
-		newPDF = loadWebPage( link )
+		response = loadWebPage( link, cookies )
+		newPDF = response['data']
+		cookies = response['cookies']
 
 		print "Page loaded. Looking for pdf links..."
 
@@ -89,19 +111,23 @@ def makePDFNameFromLink( link ):
 
 # Prototyper
 def test():
-	file = open( 'D:\ProgramyVS\Studia\PDFAnal\Docs\ieee.html', 'r' )
-	htmlContent = file.read()
+	#file = open( 'D:\ProgramyVS\Studia\PDFAnal\Docs\ieee.html', 'r' )
+	#htmlContent = file.read()
+
+	HTMLresponse = loadWebPage( 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc' )
+	htmlContent = HTMLresponse['data']
+	htmlCookie = HTMLresponse['cookies']
 
 	pdfLinks = []
 	links = extractLinksFromSite( htmlContent );
 
-	pdfLinks = getPDFLinks( links )
+	pdfLinks = getPDFLinks( links, htmlCookie )
 	
 	for pdf in pdfLinks:
 		print "Loading pdf: [" + pdf + "]"
 
 		saveFile = makePDFNameFromLink( pdf )
-		if loadSiteToFile( pdf, saveFile ):
+		if loadSiteToFile( pdf, saveFile, htmlCookie ):
 			print "PDF saved as: " + saveFile
 
 
