@@ -36,6 +36,19 @@ def loadWebPage( address, webOpener ):
 
 	return data
 
+# Converts string to such form, that can be used as valid path.
+# from Django framework, template/defaultfilters.py
+def slugify( value ):
+    """
+    Normalizes string, converts to lowercase, removes non-alpha characters,
+    and converts spaces to hyphens.
+    """
+    import unicodedata
+    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
+    value = unicode(re.sub('[^\w\s-]', '', value).strip())
+    return re.sub('[-\s]+', '-', value)
+
+
 # Makes list of links to pdfs
 def extractLinksFromPage( htmlContent ):
 	parser = BeautifulSoup( htmlContent, 'html.parser' )
@@ -46,6 +59,27 @@ def extractLinksFromPage( htmlContent ):
 		links.append( re.sub('[\[CDATA\]]', '', link.string ) )
 
 	return links
+
+
+# Makes list of direct links to pdfs and extracts their names
+def extractLinksAndNamesFromPage( htmlContent ):
+	parser = BeautifulSoup( htmlContent, 'html.parser' )
+
+	documents = parser.find_all('document')
+
+	pdfList = []
+	
+	for document in documents:
+		pdfLink = document.pdf.extract()
+		pdfName = document.title.extract()
+
+		newPdfData = dict()
+		newPdfData[ 'link' ] = pdfLink.string
+		newPdfData[ 'name' ] = slugify( pdfName.string )
+		pdfList.append( newPdfData );
+
+	return pdfList
+
 
 # Makes list of direct links to pdfs
 def extractLinksFromPage2( htmlContent ):
@@ -65,7 +99,7 @@ def extractLinksFromPage2( htmlContent ):
 
 		
 
-def makePDFNameFromLink( link, filePath = 'D:\ProgramyVS\Studia\PDFAnal\Docs\pdfs' ):
+def makePDFNameFromLink( link, filePath ):
 	if not os.path.isdir( filePath ):
 		mkdir( filePath )
 	
@@ -129,6 +163,32 @@ def loadData( outputDirectory ):
 ###
 #######################################################################################################
 
+
+def testLoadingLinksWithNames():
+	webOpener = prapareWeb()
+
+	outputDirectory = 'D:\ProgramyVS\Studia\PDFAnal\Docs\pdfs'
+	file = open( 'D:\\ProgramyVS\\Studia\\PDFAnal\\Docs\\test\\ipsSearch.jsp.xml', 'r' )
+	htmlContent = file.read()
+
+	pdfList = extractLinksAndNamesFromPage( htmlContent );
+	
+	for element in pdfList:
+
+		pageToLoad = element[ 'link' ]
+		print "Loading page: [" + pageToLoad + "]"
+
+		pageWithPdfContent = loadWebPage( pageToLoad, webOpener )
+		print "Page loaded. Looking for pdf links..."
+
+		directPdfLink = extractLinksFromPage2( pageWithPdfContent )
+		print "Found link: " + directPdfLink
+
+		#saveFile = makePDFNameFromLink( directPdfLink, outputDirectory )
+		saveFile = outputDirectory + "\\" + element[ 'name' ] + ".pdf"
+		if loadPDF( directPdfLink, saveFile, webOpener ):
+			print "PDF saved as: " + saveFile
+
 # Prototyper
 def test():
 	#file = open( 'D:\ProgramyVS\Studia\PDFAnal\Docs\ieee.html', 'r' )
@@ -137,6 +197,7 @@ def test():
 	webOpener = prapareWeb()
 
 	pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc'
+	outputFile = 'D:\ProgramyVS\Studia\PDFAnal\Docs\pdfs'
 
 	print "Loading page: [" + pageName + "]"
 	htmlContent = loadWebPage( pageName, webOpener )
@@ -152,7 +213,7 @@ def test():
 		directPdfLink = extractLinksFromPage2( pageWithPdfContent )
 		print "Found link: " + directPdfLink
 
-		saveFile = makePDFNameFromLink( directPdfLink )
+		saveFile = makePDFNameFromLink( directPdfLink, outputFile )
 		if loadPDF( directPdfLink, saveFile, webOpener ):
 			print "PDF saved as: " + saveFile
 
