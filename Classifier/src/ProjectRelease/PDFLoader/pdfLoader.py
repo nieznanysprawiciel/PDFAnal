@@ -63,45 +63,6 @@ def extractLinksFromPage2( htmlContent ):
 		if re.search( '.pdf', currentFrame['src'] ):
 			return currentFrame['src']
 
-
-def writeToFile( content, fileName ):
-	target = open( fileName, 'w' )
-	target.write( content )
-	target.close
-
-# Loads content of web page and writes it to specyfied file
-def loadSiteToFile( address, fileName, webOpener ):
-	htmlContent = loadWebPage( address, webOpener )
-
-	if not htmlContent:
-		return False
-	else:
-		writeToFile( htmlContent, fileName )
-		return True
-
-
-def getPDFLinks( links, webOpener ):
-
-	pdfLinks = []
-	for link in links:
-		print "Processing link: [" + link + "]"
-
-		newPDF = loadWebPage( link, webOpener )
-
-		print "Page loaded. Looking for pdf links..."
-
-		parser = BeautifulSoup( newPDF, 'html.parser' )
-		name = parser.find( "meta", {"src":"citation_pdf_url"} )
-
-		if not name:
-			print "Pdfs not found."
-		else:
-			pdfLink = name['content']
-			pdfLinks.append( pdfLink )
-
-			print "Found link: " + pdfLink
-
-	return pdfLinks
 		
 
 def makePDFNameFromLink( link ):
@@ -166,6 +127,55 @@ def test():
 		if loadPDF( directPdfLink, saveFile, webOpener ):
 			print "PDF saved as: " + saveFile
 
+
+# invoke command
+test()
+
+#######################################################################################################
+###
+###							Tests and helper functions, that aren't used no more
+###
+#######################################################################################################
+
+
+def writeToFile( content, fileName ):
+	target = open( fileName, 'w' )
+	target.write( content )
+	target.close
+
+# Loads content of web page and writes it to specyfied file
+def loadSiteToFile( address, fileName, webOpener ):
+	htmlContent = loadWebPage( address, webOpener )
+
+	if not htmlContent:
+		return False
+	else:
+		writeToFile( htmlContent, fileName )
+		return True
+
+
+def getPDFLinks( links, webOpener ):
+
+	pdfLinks = []
+	for link in links:
+		print "Processing link: [" + link + "]"
+
+		newPDF = loadWebPage( link, webOpener )
+
+		print "Page loaded. Looking for pdf links..."
+
+		parser = BeautifulSoup( newPDF, 'html.parser' )
+		name = parser.find( "meta", {"src":"citation_pdf_url"} )
+
+		if not name:
+			print "Pdfs not found."
+		else:
+			pdfLink = name['content']
+			pdfLinks.append( pdfLink )
+
+			print "Found link: " + pdfLink
+
+	return pdfLinks
 
 
 def testPdf():

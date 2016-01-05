@@ -15,7 +15,6 @@ using System.ComponentModel;
 using System.Windows.Controls;
 using System.IO;
 
-
 using LAIR.ResourceAPIs.WordNet;
 using LAIR.Collections.Generic;
 
@@ -71,7 +70,11 @@ namespace PDFAnal
             addPredefinedCategoriesBackgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(addPredefinedCategoriesBackgroundWorker_RunWorkerCompleted);
             addPredefinedCategoriesBackgroundWorker.WorkerReportsProgress = false;
             addPredefinedCategoriesBackgroundWorker.WorkerSupportsCancellation = false;
-        }
+
+			/// Init PDFs loading controls
+			pdfsDirectoryTextBox.Text = Environment.CurrentDirectory + "\\Data\\";
+
+		}
 
 
         #region button clicks
@@ -258,6 +261,16 @@ namespace PDFAnal
             ButtonLoadPredefinedCategories.IsEnabled = enabled && !predefinedCategoriesLoaded;
         }
         #endregion
+
+        private void LoadPDFsFromWeb( object sender, RoutedEventArgs e )
+        {
+			Process p = new Process();
+			p.StartInfo.FileName = "python.exe";		// I hope someone has python.exe in Path environmental variable
+			p.StartInfo.RedirectStandardOutput = true;	
+			p.StartInfo.UseShellExecute = false;		// make sure we can read the output from stdout
+			p.StartInfo.Arguments = "";
+			p.Start();
+		}
 
         /*
         //  straszne dziadostwo jezeli chodzi o parsowanie
