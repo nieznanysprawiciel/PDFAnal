@@ -5,6 +5,8 @@ from bs4 import BeautifulSoup
 import re
 import os
 from cookielib import CookieJar
+from pyPdf import PdfFileWriter, PdfFileReader
+from StringIO import StringIO
 
 def prapareWeb():
 	socks.setdefaultproxy( socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 12345 )
@@ -17,14 +19,10 @@ def prapareWeb():
 
 
 # Loads content of the web page using SOKS5 proxy
-def loadWebPage( address, cookies = '' ):
+def loadWebPage( address, webOpener ):
 	data = ''
 	try:
-		opener = urllib2.build_opener()
-		if cookies:
-			opener.addheaders.append( ( 'Cookie', cookies ) )
-
-		response = opener.open( address )
+		response = webOpener.open( address )
 
 		chunk = True
 		while chunk:
@@ -34,14 +32,9 @@ def loadWebPage( address, cookies = '' ):
 		print 'can\'t open', address
 		return ''
 
-	returnValue = {}
-	returnValue['cookies'] = response.info().getheader('Set-Cookie')
-	returnValue['data'] = data
 	response.close()
 
-	print returnValue['cookies']
-
-	return returnValue
+	return data
 
 # Makes list of links to pdfs
 def extractLinksFromSite( htmlContent ):
@@ -55,32 +48,29 @@ def extractLinksFromSite( htmlContent ):
 	return links
 
 
-# Loads content of web page and writes it to specyfied file
-def loadSiteToFile( address, fileName, cookies = '' ):
-	response = loadWebPage( address, cookies )
+def writeToFile( content, fileName ):
+	target = open( fileName, 'w' )
+	target.write( content )
+	target.close
 
-	htmlContent = response['data']
-	cookies = response['cookies']
+# Loads content of web page and writes it to specyfied file
+def loadSiteToFile( address, fileName, webOpener ):
+	htmlContent = loadWebPage( address, webOpener )
 
 	if not htmlContent:
 		return False
 	else:
-		target = open( fileName, 'w' )
-		target.write( htmlContent )
-		target.close
-
+		writeToFile( htmlContent, fileName )
 		return True
 
 
-def getPDFLinks( links, cookies = '' ):
+def getPDFLinks( links, webOpener ):
 
 	pdfLinks = []
 	for link in links:
 		print "Processing link: [" + link + "]"
 
-		response = loadWebPage( link, cookies )
-		newPDF = response['data']
-		cookies = response['cookies']
+		newPDF = loadWebPage( link, webOpener )
 
 		print "Page loaded. Looking for pdf links..."
 
@@ -109,34 +99,80 @@ def makePDFNameFromLink( link ):
 
 
 
+def loadPDF( address, outputFile, webOpener ):
+	writer = PdfFileWriter()
+
+	htmlContent = loadWebPage( address, webOpener )
+
+	if not htmlContent:
+		return False
+
+	memoryFile = StringIO( htmlContent )
+	pdfFile = PdfFileReader( memoryFile )
+
+	for pageNum in xrange( pdfFile.getNumPages() ):
+			currentPage = pdfFile.getPage( pageNum )
+			writer.addPage( currentPage )
+
+
+	outputStream = open( outputFile, "wb" )
+	writer.write( outputStream )
+	outputStream.close()
+
+	return True
+
+
+
 # Prototyper
 def test():
 	#file = open( 'D:\ProgramyVS\Studia\PDFAnal\Docs\ieee.html', 'r' )
 	#htmlContent = file.read()
 
-	HTMLresponse = loadWebPage( 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc' )
-	htmlContent = HTMLresponse['data']
-	htmlCookie = HTMLresponse['cookies']
+	webOpener = prapareWeb()
 
-	pdfLinks = []
+	pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc'
+
+	print "Loading page: [" + pageName + "]"
+	htmlContent = loadWebPage( pageName, webOpener )
+
 	links = extractLinksFromSite( htmlContent );
-
-	pdfLinks = getPDFLinks( links, htmlCookie )
+	pdfLinks = getPDFLinks( links, webOpener )
 	
+	#for pdf in pdfLinks:
+	#	print "Loading pdf: [" + pdf + "]"
+
+	#	saveFile = makePDFNameFromLink( pdf )
+	#	if loadSiteToFile( pdf, saveFile, webOpener ):
+	#		print "PDF saved as: " + saveFile
+
 	for pdf in pdfLinks:
 		print "Loading pdf: [" + pdf + "]"
 
 		saveFile = makePDFNameFromLink( pdf )
-		if loadSiteToFile( pdf, saveFile, htmlCookie ):
+		if loadPDF( pdf, saveFile, webOpener ):
 			print "PDF saved as: " + saveFile
 
 
-	#for link in links:
-	#	newPDF = loadWebPage( link )
 
-		#filePostfix = link[ link.find( "arnumber=" ) + 9 : ]
+def testPdf():
+	webOpener = prapareWeb()
+	pageName = 'http://ieeexplore.ieee.org/ielx7/7360670/7365697/07365712.pdf?tp=&arnumber=7365712&isnumber=7365697'
+	output = 'D:\\ProgramyVS\\Studia\\PDFAnal\\Docs\\test\\pdf.pdf'
 
-		#targetFile = open( filePath + 'ConferencePDF_' + filePostfix + '.pdf', 'a' )
-		#targetFile.write( newPDF )
-		#targetFile.close
+	writer = PdfFileWriter()
 
+	print "Loading page: [" + pageName + "]"
+	htmlContent = loadWebPage( pageName, webOpener )
+
+	memoryFile = StringIO( htmlContent )
+	pdfFile = PdfFileReader( memoryFile )
+
+	for pageNum in xrange( pdfFile.getNumPages() ):
+			currentPage = pdfFile.getPage( pageNum )
+			#currentPage.mergePage(watermark.getPage(0))
+			writer.addPage( currentPage )
+
+
+	outputStream = open( output, "wb" )
+	writer.write( outputStream )
+	outputStream.close()
