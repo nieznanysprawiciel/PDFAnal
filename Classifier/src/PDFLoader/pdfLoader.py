@@ -37,7 +37,7 @@ def loadWebPage( address, webOpener ):
 	return data
 
 # Makes list of links to pdfs
-def extractLinksFromSite( htmlContent ):
+def extractLinksFromPage( htmlContent ):
 	parser = BeautifulSoup( htmlContent, 'html.parser' )
 	list = parser.find_all( 'pdf' )
 
@@ -46,6 +46,22 @@ def extractLinksFromSite( htmlContent ):
 		links.append( re.sub('[\[CDATA\]]', '', link.string ) )
 
 	return links
+
+# Makes list of direct links to pdfs
+def extractLinksFromPage2( htmlContent ):
+	parser = BeautifulSoup( htmlContent, 'html.parser' )
+	frames = parser.frameset.extract()
+
+	while frames:
+		found = frames.find_next("frame")
+
+		# There's no link
+		if not found:
+			return ''
+		currentFrame = frames.frame.extract()
+
+		if re.search( '.pdf', currentFrame['src'] ):
+			return currentFrame['src']
 
 
 def writeToFile( content, fileName ):
@@ -75,7 +91,7 @@ def getPDFLinks( links, webOpener ):
 		print "Page loaded. Looking for pdf links..."
 
 		parser = BeautifulSoup( newPDF, 'html.parser' )
-		name = parser.find( "meta", {"name":"citation_pdf_url"} )
+		name = parser.find( "meta", {"src":"citation_pdf_url"} )
 
 		if not name:
 			print "Pdfs not found."
@@ -135,8 +151,8 @@ def test():
 	print "Loading page: [" + pageName + "]"
 	htmlContent = loadWebPage( pageName, webOpener )
 
-	links = extractLinksFromSite( htmlContent );
-	pdfLinks = getPDFLinks( links, webOpener )
+	links = extractLinksFromPage( htmlContent );
+	#pdfLinks = getPDFLinks( links, webOpener )
 	
 	#for pdf in pdfLinks:
 	#	print "Loading pdf: [" + pdf + "]"
@@ -145,7 +161,7 @@ def test():
 	#	if loadSiteToFile( pdf, saveFile, webOpener ):
 	#		print "PDF saved as: " + saveFile
 
-	for pdf in pdfLinks:
+	for pdf in links:
 		print "Loading pdf: [" + pdf + "]"
 
 		saveFile = makePDFNameFromLink( pdf )
@@ -176,3 +192,36 @@ def testPdf():
 	outputStream = open( output, "wb" )
 	writer.write( outputStream )
 	outputStream.close()
+
+def testLoad():
+	webOpener = prapareWeb()
+	pageName = 'http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7328915'
+	output = 'D:\\ProgramyVS\\Studia\\PDFAnal\\Docs\\test\\pdf.txt'
+
+	htmlContent = loadWebPage( pageName, webOpener )
+
+	writeToFile( htmlContent, output )
+
+
+def testExtractFrame():
+	input = 'D:\\ProgramyVS\\Studia\\PDFAnal\\Docs\\test\\pdf.txt'
+		
+	file = open( input, 'r' )
+	htmlContent = file.read()
+
+	parser = BeautifulSoup( htmlContent, 'html.parser' )
+	
+	frames = parser.frameset.extract()
+
+
+	while frames:
+		found = frames.find_next("frame")
+
+		# There's no link
+		if not found:
+			return ''
+		currentFrame = frames.frame.extract()
+
+		if re.search( '.pdf', currentFrame['src'] ):
+			return currentFrame['src']
+
