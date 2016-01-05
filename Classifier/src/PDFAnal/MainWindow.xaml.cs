@@ -31,8 +31,9 @@ namespace PDFAnal
 
         private BackgroundWorker classifyDocumentBackgroundWorker;
         private BackgroundWorker addPredefinedCategoriesBackgroundWorker;
+		private BackgroundWorker pdfsLoadingBackgroundWorker;
 
-        private bool predefinedCategoriesLoaded = false;
+		private bool predefinedCategoriesLoaded = false;
 
 		private Manager				PDFs;
 
@@ -80,6 +81,13 @@ namespace PDFAnal
 			PDFs.SetPDFsDirectory( pdfsDirectoryTextBox.Text );
 
 			directoryContentListBox.DataContext = PDFs.GetFileModelContext();
+
+			// PDFs loading background worker
+			pdfsLoadingBackgroundWorker = new BackgroundWorker();
+			pdfsLoadingBackgroundWorker.WorkerReportsProgress = false;
+			pdfsLoadingBackgroundWorker.WorkerSupportsCancellation = false;
+			pdfsLoadingBackgroundWorker.DoWork += new DoWorkEventHandler( DoWorkLoadPDFsWorker );
+			pdfsLoadingBackgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler( WorkCompletedLoadPDFsWorker );
 		}
 
 
@@ -222,11 +230,21 @@ namespace PDFAnal
             return Directory.GetFiles(@"..\categories\", "*.txt");
         }
 
-        #endregion
+		private void DoWorkLoadPDFsWorker( object sender, DoWorkEventArgs e )
+		{
+			PDFs.LoadFromWeb( e.Argument as string );
+		}
 
-        #region view manipulations
+		private void WorkCompletedLoadPDFsWorker( object sender, RunWorkerCompletedEventArgs e )
+		{
+			loadRemotePDFsButton.IsEnabled = true;
+		}
 
-        public void updateCategories(List<object> categories)
+		#endregion
+
+		#region view manipulations
+
+		public void updateCategories(List<object> categories)
         {
             ListBoxCategories.Items.Clear();
             foreach (var category in categories)
@@ -270,7 +288,8 @@ namespace PDFAnal
 
         private void LoadPDFsFromWeb( object sender, RoutedEventArgs e )
         {
-			PDFs.LoadFromWeb( pdfsDirectoryTextBox.Text );
+			loadRemotePDFsButton.IsEnabled = false;
+			pdfsLoadingBackgroundWorker.RunWorkerAsync( pdfsDirectoryTextBox.Text );
 		}
 
 		private void button_Click( object sender, RoutedEventArgs e )

@@ -55,6 +55,7 @@ namespace PDFAnal.pdfManager
 			fileModel.SetNewDirectory( watcherDirectory );
 		}
 
+		// Call in background thread
 		public void LoadFromWeb( string outputPath )
 		{
 			if ( pythonPath == null )
@@ -71,7 +72,6 @@ namespace PDFAnal.pdfManager
 			pythonProcess.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
 			pythonProcess.Start();
 
-			// @todo Move to worker thread
 			pythonProcess.WaitForExit();
 		}
 
