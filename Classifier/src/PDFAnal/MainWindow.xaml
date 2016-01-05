@@ -19,8 +19,8 @@
 		<Label x:Name="LabelCategories" Content="categories" HorizontalAlignment="Left" Margin="10,5,0,0" VerticalAlignment="Top" Width="100" Height="25" Grid.ColumnSpan="2"/>
 		<Label x:Name="LabelClassifiedAs" HorizontalAlignment="Left" Margin="10,296,0,0" VerticalAlignment="Top" Width="572" Grid.ColumnSpan="2" Height="25"/>
 		<Grid Grid.Column="2" HorizontalAlignment="Left" Height="238" Margin="10,10,0,0" VerticalAlignment="Top" Width="499">
-			<Button x:Name="loadRemotePDFsButton" Content="Load from Web" HorizontalAlignment="Left" Margin="309,67,0,0" VerticalAlignment="Top" Width="107" Click="LoadPDFsFromWeb"/>
-			<TextBox x:Name="pdfsDirectoryTextBox" HorizontalAlignment="Left" Height="23" Margin="15,39,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="401"/>
+			<Button x:Name="loadRemotePDFsButton" Content="Load from Web" HorizontalAlignment="Left" Margin="382,67,0,0" VerticalAlignment="Top" Width="107" Click="LoadPDFsFromWeb"/>
+			<TextBox x:Name="pdfsDirectoryTextBox" HorizontalAlignment="Left" Height="23" Margin="15,39,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="474"/>
 			<Label x:Name="pdfsDirectoryLabel" Content="PDFs directory:" HorizontalAlignment="Left" Margin="15,8,0,0" VerticalAlignment="Top" Width="113"/>
 		</Grid>
 		<!--

@@ -79,6 +79,7 @@
     </Compile>
     <Compile Include="Pair.cs" />
     <Compile Include="Classifier.cs" />
+    <Compile Include="pdfManager\Manager.cs" />
     <Compile Include="StopWord.cs" />
     <Compile Include="Stemmer.cs" />
     <Compile Include="Utility.cs" />

@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.ComponentModel;
 using System.Windows.Controls;
 using System.IO;
+using PDFAnal.pdfManager;
 
 using LAIR.ResourceAPIs.WordNet;
 using LAIR.Collections.Generic;
@@ -32,6 +33,8 @@ namespace PDFAnal
         private BackgroundWorker addPredefinedCategoriesBackgroundWorker;
 
         private bool predefinedCategoriesLoaded = false;
+
+		private Manager				PDFs;
 
         public MainWindow()
         {
@@ -73,7 +76,7 @@ namespace PDFAnal
 
 			/// Init PDFs loading controls
 			pdfsDirectoryTextBox.Text = Environment.CurrentDirectory + "\\Data\\";
-
+			PDFs = new pdfManager.Manager();
 		}
 
 
@@ -264,12 +267,7 @@ namespace PDFAnal
 
         private void LoadPDFsFromWeb( object sender, RoutedEventArgs e )
         {
-			Process p = new Process();
-			p.StartInfo.FileName = "python.exe";		// I hope someone has python.exe in Path environmental variable
-			p.StartInfo.RedirectStandardOutput = true;	
-			p.StartInfo.UseShellExecute = false;		// make sure we can read the output from stdout
-			p.StartInfo.Arguments = "";
-			p.Start();
+			PDFs.LoadFromWeb();
 		}
 
         /*
