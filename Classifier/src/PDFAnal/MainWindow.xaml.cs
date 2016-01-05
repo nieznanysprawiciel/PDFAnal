@@ -270,7 +270,7 @@ namespace PDFAnal
 
         private void LoadPDFsFromWeb( object sender, RoutedEventArgs e )
         {
-			PDFs.LoadFromWeb();
+			PDFs.LoadFromWeb( pdfsDirectoryTextBox.Text );
 		}
 
 		private void button_Click( object sender, RoutedEventArgs e )

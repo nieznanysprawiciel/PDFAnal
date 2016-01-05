@@ -65,13 +65,12 @@ def extractLinksFromPage2( htmlContent ):
 
 		
 
-def makePDFNameFromLink( link ):
-	filePath = 'D:\ProgramyVS\Studia\PDFAnal\Docs\pdfs\\'
+def makePDFNameFromLink( link, filePath = 'D:\ProgramyVS\Studia\PDFAnal\Docs\pdfs' ):
 	if not os.path.isdir( filePath ):
 		mkdir( filePath )
 	
 	filePostfix = link[ link.find( "arnumber=" ) + 9 : ]
-	targetFile = filePath + 'ConferencePDF_' + filePostfix + '.pdf'
+	targetFile = filePath + '\\ConferencePDF_' + filePostfix + '.pdf'
 	return targetFile
 
 
@@ -99,6 +98,36 @@ def loadPDF( address, outputFile, webOpener ):
 	return True
 
 
+# This is main function for loading PDFs
+def loadData( outputDirectory ):
+	webOpener = prapareWeb()
+
+	pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc'
+
+	print "Loading page: [" + pageName + "]"
+	htmlContent = loadWebPage( pageName, webOpener )
+
+	links = extractLinksFromPage( htmlContent );
+
+	for pageWithPdf in links:
+		print "Loading page: [" + pageWithPdf + "]"
+
+		pageWithPdfContent = loadWebPage( pageWithPdf, webOpener )
+		print "Page loaded. Looking for pdf links..."
+
+		directPdfLink = extractLinksFromPage2( pageWithPdfContent )
+		print "Found link: " + directPdfLink
+
+		saveFile = makePDFNameFromLink( directPdfLink, outputDirectory )
+		if loadPDF( directPdfLink, saveFile, webOpener ):
+			print "PDF saved as: " + saveFile
+
+
+#######################################################################################################
+###
+###							Tests and helper functions, that aren't used no more
+###
+#######################################################################################################
 
 # Prototyper
 def test():
@@ -128,14 +157,6 @@ def test():
 			print "PDF saved as: " + saveFile
 
 
-# invoke command
-test()
-
-#######################################################################################################
-###
-###							Tests and helper functions, that aren't used no more
-###
-#######################################################################################################
 
 
 def writeToFile( content, fileName ):

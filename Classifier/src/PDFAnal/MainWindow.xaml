@@ -22,7 +22,7 @@
 			<Button x:Name="loadRemotePDFsButton" Content="Load from Web" HorizontalAlignment="Left" Margin="382,67,0,0" VerticalAlignment="Top" Width="107" Click="LoadPDFsFromWeb"/>
 			<TextBox x:Name="pdfsDirectoryTextBox" HorizontalAlignment="Left" Height="23" Margin="15,39,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="474"/>
 			<Label x:Name="pdfsDirectoryLabel" Content="PDFs directory:" HorizontalAlignment="Left" Margin="15,8,0,0" VerticalAlignment="Top" Width="113"/>
-			<ListBox x:Name="directoryContentListBox" HorizontalAlignment="Left" Height="305" Margin="15,99,0,0" VerticalAlignment="Top" Width="286" ItemsSource="{Binding DirContent}">
+			<ListBox x:Name="directoryContentListBox" HorizontalAlignment="Left" Height="305" Margin="15,99,0,0" VerticalAlignment="Top" Width="462" ItemsSource="{Binding DirContent}">
 				<ListBox.ItemTemplate>
 					<DataTemplate>
 						<TextBlock Text="{Binding Name}"/>

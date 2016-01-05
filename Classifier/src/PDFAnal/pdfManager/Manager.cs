@@ -2,21 +2,60 @@
 using System.Diagnostics;
 using Microsoft.Win32;
 using System.Windows;
+using System.IO;
 
 namespace PDFAnal.pdfManager
 {
 	class Manager
 	{
-		private string			pythonPath;
-		private FileListModel   fileModel;
+		private string					pythonPath;
+		private FileListModel			fileModel;
+
+		private FileSystemWatcher       directoryWatcher;
+		private string                  watcherDirectory;
 
 		public Manager()
 		{
 			fileModel = new FileListModel();
 			pythonPath = GetPythonPath();
+			directoryWatcher = null;
 		}
 
-		public void LoadFromWeb()
+		private void InitFileSystemWatcher( string path )
+		{
+			// Disable last watcher (I don't know, if it isn't useless.
+			if( directoryWatcher != null )
+				directoryWatcher.EnableRaisingEvents = false;
+
+			directoryWatcher = new FileSystemWatcher();
+			directoryWatcher.Path = path;
+			directoryWatcher.IncludeSubdirectories = false;
+			directoryWatcher.Filter = "*.pdf";
+			directoryWatcher.NotifyFilter = NotifyFilters.LastAccess |
+						 NotifyFilters.LastWrite |
+						 NotifyFilters.FileName |
+						 NotifyFilters.DirectoryName;
+
+			directoryWatcher.Changed += new FileSystemEventHandler( OnDirectoryChanged );
+			directoryWatcher.Created += new FileSystemEventHandler( OnDirectoryChanged );
+			directoryWatcher.Deleted += new FileSystemEventHandler( OnDirectoryChanged );
+			directoryWatcher.Renamed += new RenamedEventHandler( OnDirectoryRenamed );
+
+			directoryWatcher.EnableRaisingEvents = true;
+		}
+
+		private void OnDirectoryChanged( object sender, FileSystemEventArgs e )
+		{
+			fileModel.SetNewDirectory( watcherDirectory );
+		}
+
+		void OnDirectoryRenamed( object sender, RenamedEventArgs e )
+		{
+			watcherDirectory = e.Name;
+			fileModel.SetNewDirectory( watcherDirectory );
+		}
+
+		public void LoadFromWeb( string outputPath )
 		{
 			if ( pythonPath == null )
 			{
@@ -28,14 +67,11 @@ namespace PDFAnal.pdfManager
 			pythonProcess.StartInfo.FileName = pythonPath;
 			pythonProcess.StartInfo.RedirectStandardOutput = false;
 			pythonProcess.StartInfo.UseShellExecute = true;
-			pythonProcess.StartInfo.Arguments = Environment.CurrentDirectory + "\\PDFLoader\\pdfLoader.py";
+			pythonProcess.StartInfo.Arguments = Environment.CurrentDirectory + "\\PDFLoader\\InvokeLoading.py " + outputPath;
 			pythonProcess.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
 			pythonProcess.Start();
 
-			//StreamReader stream = pythonProcess.StandardOutput;
-			//String output = stream.ReadToEnd();
-			//Console.WriteLine( output );
-
+			// @todo Move to worker thread
 			pythonProcess.WaitForExit();
 		}
 
@@ -92,7 +128,13 @@ namespace PDFAnal.pdfManager
 		}
 
 
-		public void				SetPDFsDirectory( string directory ) { fileModel.SetNewDirectory( directory ); }
+		public void				SetPDFsDirectory( string directory )
+		{
+			watcherDirectory = directory;
+			InitFileSystemWatcher( watcherDirectory );
+			fileModel.SetNewDirectory( watcherDirectory );
+		}
+
 		public FileListModel	GetFileModelContext() { return fileModel; }
 	}
 }
