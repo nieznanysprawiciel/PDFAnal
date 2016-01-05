@@ -45,6 +45,7 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Core" />
@@ -79,6 +80,8 @@
     </Compile>
     <Compile Include="Pair.cs" />
     <Compile Include="Classifier.cs" />
+    <Compile Include="pdfManager\FileItem.cs" />
+    <Compile Include="pdfManager\FileListModel.cs" />
     <Compile Include="pdfManager\Manager.cs" />
     <Compile Include="StopWord.cs" />
     <Compile Include="Stemmer.cs" />

@@ -77,6 +77,9 @@ namespace PDFAnal
 			/// Init PDFs loading controls
 			pdfsDirectoryTextBox.Text = Environment.CurrentDirectory + "\\Data\\";
 			PDFs = new pdfManager.Manager();
+			PDFs.SetPDFsDirectory( pdfsDirectoryTextBox.Text );
+
+			directoryContentListBox.DataContext = PDFs.GetFileModelContext();
 		}
 
 
@@ -270,7 +273,20 @@ namespace PDFAnal
 			PDFs.LoadFromWeb();
 		}
 
-        /*
+		private void button_Click( object sender, RoutedEventArgs e )
+		{
+			System.Windows.Forms.FolderBrowserDialog openFolder = new System.Windows.Forms.FolderBrowserDialog();
+			openFolder.SelectedPath = pdfsDirectoryTextBox.Text;
+
+			var result = openFolder.ShowDialog();
+			if ( result == System.Windows.Forms.DialogResult.OK )
+			{
+				pdfsDirectoryTextBox.Text = openFolder.SelectedPath;
+				PDFs.SetPDFsDirectory( openFolder.SelectedPath );
+			}
+		}
+
+		/*
         //  straszne dziadostwo jezeli chodzi o parsowanie
         //extract(new ContentScanner(page));
         private void extract(ContentScanner level)
@@ -295,5 +311,5 @@ namespace PDFAnal
             }
         }
         */
-    }
+	}
 }

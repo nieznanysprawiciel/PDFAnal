@@ -7,11 +7,12 @@ namespace PDFAnal.pdfManager
 {
 	class Manager
 	{
-		private string pythonPath;
+		private string			pythonPath;
+		private FileListModel   fileModel;
 
 		public Manager()
 		{
-
+			fileModel = new FileListModel();
 			pythonPath = GetPythonPath();
 		}
 
@@ -90,5 +91,8 @@ namespace PDFAnal.pdfManager
 			}
 		}
 
+
+		public void				SetPDFsDirectory( string directory ) { fileModel.SetNewDirectory( directory ); }
+		public FileListModel	GetFileModelContext() { return fileModel; }
 	}
 }
