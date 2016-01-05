@@ -152,20 +152,18 @@ def test():
 	htmlContent = loadWebPage( pageName, webOpener )
 
 	links = extractLinksFromPage( htmlContent );
-	#pdfLinks = getPDFLinks( links, webOpener )
-	
-	#for pdf in pdfLinks:
-	#	print "Loading pdf: [" + pdf + "]"
 
-	#	saveFile = makePDFNameFromLink( pdf )
-	#	if loadSiteToFile( pdf, saveFile, webOpener ):
-	#		print "PDF saved as: " + saveFile
+	for pageWithPdf in links:
+		print "Loading page: [" + pageWithPdf + "]"
 
-	for pdf in links:
-		print "Loading pdf: [" + pdf + "]"
+		pageWithPdfContent = loadWebPage( pageWithPdf, webOpener )
+		print "Page loaded. Looking for pdf links..."
 
-		saveFile = makePDFNameFromLink( pdf )
-		if loadPDF( pdf, saveFile, webOpener ):
+		directPdfLink = extractLinksFromPage2( pageWithPdfContent )
+		print "Found link: " + directPdfLink
+
+		saveFile = makePDFNameFromLink( directPdfLink )
+		if loadPDF( directPdfLink, saveFile, webOpener ):
 			print "PDF saved as: " + saveFile
 
 
