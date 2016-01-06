@@ -136,7 +136,7 @@ def loadPDF( address, outputFile, webOpener ):
 def loadData( outputDirectory, numberDocuments, proxyAddress = "127.0.0.1", proxyPort = 12345 ):
 	webOpener = prapareWeb( proxyAddress, proxyPort )
 
-	pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc' + "&hc=" + numberDocuments
+	pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc'# + "&hc=" + numberDocuments
 
 	print "Loading page: [" + pageName + "]"
 	htmlContent = loadWebPage( pageName, webOpener )

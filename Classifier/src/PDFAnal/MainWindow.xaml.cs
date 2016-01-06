@@ -159,7 +159,7 @@ namespace PDFAnal
 			if ( selectedItem == null )
 				return;
 
-			string fileName = pdfsDirectoryTextBox.Text + selectedItem.Name;
+			string fileName = pdfsDirectoryTextBox.Text + "\\" + selectedItem.Name;
 
             org.pdfclown.files.File file = new org.pdfclown.files.File(fileName);
             document = file.Document;
