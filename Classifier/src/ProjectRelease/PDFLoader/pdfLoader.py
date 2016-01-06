@@ -8,8 +8,8 @@ from cookielib import CookieJar
 from pyPdf import PdfFileWriter, PdfFileReader
 from StringIO import StringIO
 
-def prapareWeb():
-	socks.setdefaultproxy( socks.PROXY_TYPE_SOCKS5, "127.0.0.1", 12345 )
+def prapareWeb( address, port ):
+	socks.setdefaultproxy( socks.PROXY_TYPE_SOCKS5, address, port )
 	socket.socket = socks.socksocket
 
 	cookieEater = CookieJar()
@@ -133,10 +133,10 @@ def loadPDF( address, outputFile, webOpener ):
 
 
 # This is main function for loading PDFs
-def loadData( outputDirectory ):
-	webOpener = prapareWeb()
+def loadData( outputDirectory, numberDocuments, proxyAddress = "127.0.0.1", proxyPort = 12345 ):
+	webOpener = prapareWeb( proxyAddress, proxyPort )
 
-	pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc'
+	pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc' + "&hc=" + numberDocuments
 
 	print "Loading page: [" + pageName + "]"
 	htmlContent = loadWebPage( pageName, webOpener )
@@ -168,7 +168,7 @@ def loadData( outputDirectory ):
 
 
 def testLoadingLinksWithNames():
-	webOpener = prapareWeb()
+	webOpener = prapareWeb( "127.0.0.1", 12345 )
 
 	outputDirectory = 'D:\ProgramyVS\Studia\PDFAnal\Docs\pdfs'
 	file = open( 'D:\\ProgramyVS\\Studia\\PDFAnal\\Docs\\test\\ipsSearch.jsp.xml', 'r' )
@@ -197,7 +197,7 @@ def test():
 	#file = open( 'D:\ProgramyVS\Studia\PDFAnal\Docs\ieee.html', 'r' )
 	#htmlContent = file.read()
 
-	webOpener = prapareWeb()
+	webOpener = prapareWeb( "127.0.0.1", 12345 )
 
 	pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc'
 	outputFile = 'D:\ProgramyVS\Studia\PDFAnal\Docs\pdfs'
@@ -264,7 +264,7 @@ def getPDFLinks( links, webOpener ):
 
 
 def testPdf():
-	webOpener = prapareWeb()
+	webOpener = prapareWeb( "127.0.0.1", 12345 )
 	pageName = 'http://ieeexplore.ieee.org/ielx7/7360670/7365697/07365712.pdf?tp=&arnumber=7365712&isnumber=7365697'
 	output = 'D:\\ProgramyVS\\Studia\\PDFAnal\\Docs\\test\\pdf.pdf'
 
@@ -287,7 +287,7 @@ def testPdf():
 	outputStream.close()
 
 def testLoad():
-	webOpener = prapareWeb()
+	webOpener = prapareWeb( "127.0.0.1", 12345 )
 	pageName = 'http://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=7328915'
 	output = 'D:\\ProgramyVS\\Studia\\PDFAnal\\Docs\\test\\pdf.txt'
 

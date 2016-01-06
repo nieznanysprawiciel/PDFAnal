@@ -379,8 +379,8 @@ namespace PDFAnal
 
 		private void Window_Closing( object sender, CancelEventArgs e )
 		{
+			progressWindow.end = true;
 			progressWindow.Close();
-
 		}
 	}
 }

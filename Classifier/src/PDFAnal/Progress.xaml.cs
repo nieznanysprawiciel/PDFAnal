@@ -19,6 +19,8 @@ namespace PDFAnal
 	/// </summary>
 	public partial class Progress : Window
 	{
+		public bool end = false;
+
 		public Progress()
 		{
 			InitializeComponent();
@@ -31,7 +33,7 @@ namespace PDFAnal
 
 		private void Window_Closing( object sender, System.ComponentModel.CancelEventArgs e )
 		{
-			if( this.IsVisible )
+			if( !end )
 				e.Cancel = true;
 		}
 	}
