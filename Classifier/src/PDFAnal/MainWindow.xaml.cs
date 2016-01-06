@@ -32,7 +32,8 @@ namespace PDFAnal
 		private ClassifiedCollection classifiedDocuments;
 
         private BackgroundWorker classifyDocumentBackgroundWorker;
-        private BackgroundWorker addPredefinedCategoriesBackgroundWorker;
+		private BackgroundWorker classifyAllDocumentBackgroundWorker;
+		private BackgroundWorker addPredefinedCategoriesBackgroundWorker;
 		private BackgroundWorker pdfsLoadingBackgroundWorker;
 		private Progress progressWindow;
 
@@ -76,7 +77,14 @@ namespace PDFAnal
             classifyDocumentBackgroundWorker.WorkerReportsProgress = false;
             classifyDocumentBackgroundWorker.WorkerSupportsCancellation = false;
 
-            addPredefinedCategoriesBackgroundWorker = new BackgroundWorker();
+			classifyAllDocumentBackgroundWorker = new BackgroundWorker();
+			classifyAllDocumentBackgroundWorker.DoWork += new DoWorkEventHandler( DoWorkClassifyAll );
+			classifyAllDocumentBackgroundWorker.ProgressChanged += new ProgressChangedEventHandler( ProgressClassifyAll );
+			classifyAllDocumentBackgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler( WorkCompletedClassifyAll );
+			classifyAllDocumentBackgroundWorker.WorkerReportsProgress = true;
+			classifyAllDocumentBackgroundWorker.WorkerSupportsCancellation = false;
+
+			addPredefinedCategoriesBackgroundWorker = new BackgroundWorker();
             addPredefinedCategoriesBackgroundWorker.DoWork += new DoWorkEventHandler(addPredefinedCategoriesBackgroundWorker_DoWork);
 			addPredefinedCategoriesBackgroundWorker.ProgressChanged += new ProgressChangedEventHandler( ProgressFunction );
             addPredefinedCategoriesBackgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(addPredefinedCategoriesBackgroundWorker_RunWorkerCompleted);
@@ -118,6 +126,7 @@ namespace PDFAnal
 
 		private void ShowProgressPercentage()
 		{
+			progressWindow.SetProgress( 0.0 );
 			progressWindow.progressBar.IsIndeterminate = false;
 			progressWindow.Visibility = Visibility.Visible;
 			progressWindow.Show();
@@ -150,22 +159,37 @@ namespace PDFAnal
 			classifyDocumentBackgroundWorker.RunWorkerAsync();
         }
 
-        private void LoadPDFButton_Click(object sender, RoutedEventArgs e)
+		private void ProcessAllPDFs_Click( object sender, RoutedEventArgs e )
+		{
+			SetViewEnabled( false );
+			LabelClassifiedAs.Content = "Analyzing documents...";
+
+			ShowProgressPercentage();
+
+			string directory = pdfsDirectoryTextBox.Text;
+			classifyAllDocumentBackgroundWorker.RunWorkerAsync( directory );
+		}
+
+		private void LoadPDFButton_Click(object sender, RoutedEventArgs e)
         {
             LabelClassifiedAs.Content = "";
-            ListBoxClassificationResult.Items.Clear();
 
 			var selectedItem = directoryContentListBox.SelectedItem as PDFAnal.pdfManager.FileItem;
 			if ( selectedItem == null )
 				return;
 
-			string fileName = pdfsDirectoryTextBox.Text + "\\" + selectedItem.Name;
-
-            org.pdfclown.files.File file = new org.pdfclown.files.File(fileName);
-            document = file.Document;
-            DocumentNameLabel.Content = selectedItem.Name;
-            ProcessPDFBButton.IsEnabled = true;
+			LoadPDF( pdfsDirectoryTextBox.Text, selectedItem.Name );
         }
+
+		private void LoadPDF( string directory, string fileName )
+		{
+			string fullPath = directory + "\\" + fileName;
+
+			org.pdfclown.files.File file = new org.pdfclown.files.File( fullPath );
+			document = file.Document;
+			DocumentNameLabel.Content = fileName;
+			ProcessPDFBButton.IsEnabled = true;
+		}
 
         private void ButtonAddCategory_Click(object sender, RoutedEventArgs e)
         {
@@ -206,26 +230,76 @@ namespace PDFAnal
         #endregion
 
         #region background workers
+		void DoWorkClassifyAll( object sender, DoWorkEventArgs e )
+		{
+			BackgroundWorker worker = sender as BackgroundWorker;
 
-        /// <summary>
-        /// On completed do the appropriate task
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        void classifyDocumentBackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+			string directory = e.Argument as string;
+			var dirInfo = new DirectoryInfo( directory );
+			FileInfo[] infos = dirInfo.GetFiles( "*.pdf" );
+
+			var numPDFs = infos.Length;
+			int progress = 0;
+
+			foreach ( var fileInfo in infos )
+			{
+				string fullPath = directory + "\\" + fileInfo.Name;
+
+				org.pdfclown.files.File file = new org.pdfclown.files.File( fullPath );
+				document = file.Document;
+				if ( document == null )
+					continue;
+
+				var category = classifier.Classify( document );
+				if ( category != null )
+				{
+					ClassifiedPdfModel newModel = new ClassifiedPdfModel();
+
+					int i = 0;
+					foreach ( var classResult in (List<Pair<object, double>>)category )
+					{
+						++i;
+						ClassifiedItem newItem = new ClassifiedItem();
+						newItem.Category = classResult.First as string;
+						newItem.Compatibility = classResult.Second.ToString();
+
+						newModel.AddClassificationData( newItem );
+					}
+
+					classifiedDocuments.AddPdfModel( directory, fileInfo.Name, newModel );
+				}
+
+				worker.ReportProgress( (int)( 100 * progress++ / (double)numPDFs ) );
+			}
+		}
+
+		void WorkCompletedClassifyAll( object sender, RunWorkerCompletedEventArgs e )
+		{
+			LabelClassifiedAs.Content = "classified as:";
+			SetViewEnabled( true );
+			HideProgress();
+		}
+
+		// Ta funkcja duplikuje ProgressFunction. Myslałem, że będzie tu inna funkcjonalność....
+		private void ProgressClassifyAll( object sender, ProgressChangedEventArgs e )
+		{
+			progressWindow.SetProgress( e.ProgressPercentage );
+		}
+
+
+		/// <summary>
+		/// On completed do the appropriate task
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		void classifyDocumentBackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            onClassificationFinish(e.Result);
+			var selectedItem = directoryContentListBox.SelectedItem as FileItem;
+
+			onClassificationFinish(e.Result, selectedItem.Name);
 			HideProgress();
         }
 
-        /// <summary>
-        /// Notification is performed here to the progress bar
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        //void m_oWorker_ProgressChanged(object sender, ProgressChangedEventArgs e)
-        //{
-        //}
 
         /// <summary>
         /// Time consuming operations go here </br>
@@ -298,7 +372,7 @@ namespace PDFAnal
             }
         }
 
-        public void onClassificationFinish(Object category)
+        public void onClassificationFinish(Object category, string name)
         {
             SetViewEnabled(true);
             //LabelWait.Content = "";
@@ -320,9 +394,7 @@ namespace PDFAnal
 					//ListBoxClassificationResult.Items.Add(i + ". " + classResult.First + "\t\t\t\t" + classResult.Second);
                 }
 
-				var selectedItem = directoryContentListBox.SelectedItem as FileItem;
-
-				classifiedDocuments.AddPdfModel( pdfsDirectoryTextBox.Text, selectedItem.Name, newModel );
+				classifiedDocuments.AddPdfModel( pdfsDirectoryTextBox.Text, name, newModel );
 				ListBoxClassificationResult.DataContext = newModel;
 			}
             else
@@ -335,6 +407,7 @@ namespace PDFAnal
         private void SetViewEnabled(bool enabled)
         {
             ProcessPDFBButton.IsEnabled = enabled;
+			ProcessAllPDFs.IsEnabled = enabled;
             TestButton.IsEnabled = enabled;
             ButtonAddCategory.IsEnabled = enabled;
             ButtonLoadPredefinedCategories.IsEnabled = enabled && !predefinedCategoriesLoaded;
@@ -382,5 +455,6 @@ namespace PDFAnal
 			progressWindow.end = true;
 			progressWindow.Close();
 		}
+
 	}
 }

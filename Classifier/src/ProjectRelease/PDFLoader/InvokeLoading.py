@@ -8,3 +8,4 @@ outputPath = sys.argv[1]
 numberDocuments = 4
 
 pdfLoader.loadData( outputPath, numberDocuments, proxyAddress, proxyPort )
+input("Press Enter to close console...")

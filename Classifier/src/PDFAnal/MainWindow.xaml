@@ -9,6 +9,7 @@
 			<ColumnDefinition Width="263*"/>
 		</Grid.ColumnDefinitions>
 		<Button x:Name="ProcessPDFBButton" Content="Process PDF" HorizontalAlignment="Left" Margin="10,243,0,0" VerticalAlignment="Top" Width="75" Click="ProcessPDFBButton_Click" Grid.ColumnSpan="2"/>
+		<Button x:Name="ProcessAllPDFs" Content="Process Directory" Grid.Column="1" HorizontalAlignment="Left" Margin="39,243,0,0" VerticalAlignment="Top" Width="126" ToolTip="Process all PDFs in directory listed on the right side" Click="ProcessAllPDFs_Click"/>
 		<Button x:Name="TestButton" Content="Test" HorizontalAlignment="Left" Margin="441,544,0,0" VerticalAlignment="Top" Width="75" Click="Test_Click" Grid.Column="1" RenderTransformOrigin="0.547,1.6"/>
 		<Button x:Name="ButtonAddCategory"  Content="Add category" Grid.Column="1" HorizontalAlignment="Left" Margin="441,8,0,0" VerticalAlignment="Top" Width="75" Click="ButtonAddCategory_Click"/>
 		<Button x:Name="ButtonLoadPredefinedCategories" Content="Load predefined categories" Grid.Column="1" HorizontalAlignment="Left" Margin="214,8,0,0" VerticalAlignment="Top" Width="220" Click="ButtonLoadPredefinedCategories_Click"/>
