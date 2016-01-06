@@ -113,27 +113,16 @@ namespace PDFAnal
 
         private void LoadPDFButton_Click(object sender, RoutedEventArgs e)
         {
-            //  clear labels
-            //LabelCategoryName.Content = "";
-            //LabelClassifiedAs.Content = "";
             LabelClassifiedAs.Content = "";
             ListBoxClassificationResult.Items.Clear();
 
-            //  open file dialog
-            OpenFileDialog fileDialog = new OpenFileDialog();
-            fileDialog.DefaultExt = ".pdf";
-            fileDialog.Filter = "PDF documents (.pdf)|*.pdf";
-			fileDialog.InitialDirectory = System.AppDomain.CurrentDomain.BaseDirectory;
+			var selectedItem = directoryContentListBox.SelectedItem as PDFAnal.pdfManager.FileItem;
+			string fileName = pdfsDirectoryTextBox.Text + selectedItem.Name;
 
-			Nullable<bool> result = fileDialog.ShowDialog();
-            if( result == true )
-            {
-                string fileName = fileDialog.FileName;
-                org.pdfclown.files.File file = new org.pdfclown.files.File(fileName);
-                document = file.Document;
-                DocumentNameLabel.Content = System.IO.Path.GetFileName(fileName);
-                ProcessPDFBButton.IsEnabled = true;
-            }
+            org.pdfclown.files.File file = new org.pdfclown.files.File(fileName);
+            document = file.Document;
+            DocumentNameLabel.Content = System.IO.Path.GetFileName(fileName);
+            ProcessPDFBButton.IsEnabled = true;
         }
 
         private void ButtonAddCategory_Click(object sender, RoutedEventArgs e)
@@ -292,7 +281,7 @@ namespace PDFAnal
 			pdfsLoadingBackgroundWorker.RunWorkerAsync( pdfsDirectoryTextBox.Text );
 		}
 
-		private void button_Click( object sender, RoutedEventArgs e )
+		private void ChangeDirectory( object sender, RoutedEventArgs e )
 		{
 			System.Windows.Forms.FolderBrowserDialog openFolder = new System.Windows.Forms.FolderBrowserDialog();
 			openFolder.SelectedPath = pdfsDirectoryTextBox.Text;

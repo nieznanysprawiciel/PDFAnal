@@ -29,7 +29,7 @@
 					</DataTemplate>
 				</ListBox.ItemTemplate>
 			</ListBox>
-			<Button x:Name="button" Content="Change Directory" HorizontalAlignment="Left" Margin="256,67,0,0" VerticalAlignment="Top" Width="107" Click="button_Click"/>
+			<Button x:Name="changeDirectoryButton" Content="Change Directory" HorizontalAlignment="Left" Margin="256,67,0,0" VerticalAlignment="Top" Width="107" Click="ChangeDirectory"/>
 		</Grid>
 		<!--
         <Label x:Name="LabelCategoryName" HorizontalAlignment="Left" Margin="10,319,0,0" VerticalAlignment="Top" Width="572" Grid.ColumnSpan="2"/>
