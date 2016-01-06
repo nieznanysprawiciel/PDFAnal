@@ -15,6 +15,7 @@ using System.ComponentModel;
 using System.Windows.Controls;
 using System.IO;
 using PDFAnal.pdfManager;
+using PDFAnal.Classification;
 
 using LAIR.ResourceAPIs.WordNet;
 using LAIR.Collections.Generic;
@@ -28,6 +29,7 @@ namespace PDFAnal
     {
         private Document document;
         private Classifier classifier;
+		private ClassifiedCollection classifiedDocuments;
 
         private BackgroundWorker classifyDocumentBackgroundWorker;
         private BackgroundWorker addPredefinedCategoriesBackgroundWorker;
@@ -42,7 +44,7 @@ namespace PDFAnal
             InitializeComponent();
 
             //  gui
-            ProcessPDFBButton.IsEnabled = false;
+            //ProcessPDFBButton.IsEnabled = false;
             
             string[] predefinedCategoriesFilePathsArr = predefinedCategoriesFilePaths();
             int predefCatCount = predefinedCategoriesFilePathsArr.Length;
@@ -88,6 +90,9 @@ namespace PDFAnal
 			pdfsLoadingBackgroundWorker.WorkerSupportsCancellation = false;
 			pdfsLoadingBackgroundWorker.DoWork += new DoWorkEventHandler( DoWorkLoadPDFsWorker );
 			pdfsLoadingBackgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler( WorkCompletedLoadPDFsWorker );
+
+			// Collection of classified documents data
+			classifiedDocuments = new ClassifiedCollection();
 		}
 
 
@@ -95,17 +100,14 @@ namespace PDFAnal
 
         private void ProcessPDFBButton_Click(object sender, RoutedEventArgs e)
         {
-            /*
-            if (document == null)
-            {
-                LabelWait.Content = "Null doc";
-                return;
-            }
-            */
-            SetViewEnabled(false);
+			LoadPDFButton_Click( sender, e );
+
+			if ( document == null )
+				return;
+
+			SetViewEnabled(false);
             Utility.Log("Initiating analysis of document: " + DocumentNameLabel.Content);
             
-            //LabelWait.Content = "Analyzing document...";
             LabelClassifiedAs.Content = "Analyzing document...";
 
             classifyDocumentBackgroundWorker.RunWorkerAsync();
@@ -117,11 +119,14 @@ namespace PDFAnal
             ListBoxClassificationResult.Items.Clear();
 
 			var selectedItem = directoryContentListBox.SelectedItem as PDFAnal.pdfManager.FileItem;
+			if ( selectedItem == null )
+				return;
+
 			string fileName = pdfsDirectoryTextBox.Text + selectedItem.Name;
 
             org.pdfclown.files.File file = new org.pdfclown.files.File(fileName);
             document = file.Document;
-            DocumentNameLabel.Content = System.IO.Path.GetFileName(fileName);
+            DocumentNameLabel.Content = selectedItem.Name;
             ProcessPDFBButton.IsEnabled = true;
         }
 
@@ -250,14 +255,25 @@ namespace PDFAnal
             {
                 LabelClassifiedAs.Content = "classified as:";
 
+				ClassifiedPdfModel newModel = new ClassifiedPdfModel();
+
                 int i = 0;
                 foreach (var classResult in (List<Pair<object, double>>)category)
                 {
                     ++i;
-                    ListBoxClassificationResult.Items.Add(i + ". " + classResult.First + "\t\t\t\t" + classResult.Second);
+					ClassifiedItem newItem = new ClassifiedItem();
+					newItem.Category = classResult.First as string;
+					newItem.Compatibility = classResult.Second.ToString();
+
+					newModel.AddClassificationData( newItem );
+					//ListBoxClassificationResult.Items.Add(i + ". " + classResult.First + "\t\t\t\t" + classResult.Second);
                 }
-                //LabelCategoryName.Content = category.ToString();
-            }
+
+				var selectedItem = directoryContentListBox.SelectedItem as FileItem;
+
+				classifiedDocuments.AddPdfModel( pdfsDirectoryTextBox.Text, selectedItem.Name, newModel );
+				ListBoxClassificationResult.DataContext = newModel;
+			}
             else
             {
                 LabelClassifiedAs.Content = "classification failed";
@@ -267,12 +283,16 @@ namespace PDFAnal
 
         private void SetViewEnabled(bool enabled)
         {
-            ProcessPDFBButton.IsEnabled = enabled && document != null;
+            ProcessPDFBButton.IsEnabled = enabled;
             LoadPDFButton.IsEnabled = enabled;
             TestButton.IsEnabled = enabled;
             ButtonAddCategory.IsEnabled = enabled;
             ButtonLoadPredefinedCategories.IsEnabled = enabled && !predefinedCategoriesLoaded;
-        }
+
+			directoryContentListBox.IsEnabled = enabled;
+			pdfsDirectoryTextBox.IsEnabled = enabled;
+			changeDirectoryButton.IsEnabled = enabled;
+		}
         #endregion
 
         private void LoadPDFsFromWeb( object sender, RoutedEventArgs e )
@@ -294,30 +314,18 @@ namespace PDFAnal
 			}
 		}
 
-		/*
-        //  straszne dziadostwo jezeli chodzi o parsowanie
-        //extract(new ContentScanner(page));
-        private void extract(ContentScanner level)
-        {
-            if(level == null)
-            return;
+		private void directoryContentListBox_SelectionChanged( object sender, SelectionChangedEventArgs e )
+		{
+			var selectedItem = directoryContentListBox.SelectedItem as FileItem;
 
-            while(level.MoveNext())
-            {
-              ContentObject content = level.Current;
-              if( content is ShowText )
-              {
-                var font = level.State.Font;
-                // Extract the current text chunk, decoding it!
-                Utility.log(font.Decode(((ShowText)content).Text));
-              }
-              else if( content is Text || content is ContainerObject )
-              {
-                // Scan the inner level!
-                extract(level.ChildLevel);
-              }
-            }
-        }
-        */
+			string fileName = selectedItem.Name;
+			string directory = pdfsDirectoryTextBox.Text;
+
+			// May be null, but that's no problem.
+			var dataModel = classifiedDocuments.GetPdfModel( directory, fileName );
+			ListBoxClassificationResult.DataContext = dataModel;
+			DocumentNameLabel.Content = fileName;
+		}
+
 	}
 }

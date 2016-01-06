@@ -71,6 +71,9 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classification\ClassifiedCollection.cs" />
+    <Compile Include="Classification\ClassifiedItem.cs" />
+    <Compile Include="Classification\ClassifiedPdfModel.cs" />
     <Compile Include="Pair.cs" />
     <Compile Include="Classifier.cs" />
     <Compile Include="pdfManager\FileItem.cs" />
