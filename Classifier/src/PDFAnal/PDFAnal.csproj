@@ -79,6 +79,9 @@
     <Compile Include="pdfManager\FileItem.cs" />
     <Compile Include="pdfManager\FileListModel.cs" />
     <Compile Include="pdfManager\Manager.cs" />
+    <Compile Include="Progress.xaml.cs">
+      <DependentUpon>Progress.xaml</DependentUpon>
+    </Compile>
     <Compile Include="StopWord.cs" />
     <Compile Include="Stemmer.cs" />
     <Compile Include="Utility.cs" />
@@ -86,6 +89,10 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
+    <Page Include="Progress.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">

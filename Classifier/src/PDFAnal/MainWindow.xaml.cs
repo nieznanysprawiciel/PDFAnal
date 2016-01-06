@@ -34,6 +34,7 @@ namespace PDFAnal
         private BackgroundWorker classifyDocumentBackgroundWorker;
         private BackgroundWorker addPredefinedCategoriesBackgroundWorker;
 		private BackgroundWorker pdfsLoadingBackgroundWorker;
+		private Progress progressWindow;
 
 		private bool predefinedCategoriesLoaded = false;
 
@@ -43,10 +44,15 @@ namespace PDFAnal
         {
             InitializeComponent();
 
-            //  gui
-            //ProcessPDFBButton.IsEnabled = false;
-            
-            string[] predefinedCategoriesFilePathsArr = predefinedCategoriesFilePaths();
+			//  gui
+			//ProcessPDFBButton.IsEnabled = false;
+			progressWindow = new Progress();
+			progressWindow.SetProgress( 0.0 );
+			HideProgress();
+			progressWindow.Show();		// Show hidden window :P
+
+
+			string[] predefinedCategoriesFilePathsArr = predefinedCategoriesFilePaths();
             int predefCatCount = predefinedCategoriesFilePathsArr.Length;
             ButtonLoadPredefinedCategories.Content = ButtonLoadPredefinedCategories.Content + " (" + predefCatCount + ")";
 
@@ -65,16 +71,16 @@ namespace PDFAnal
             //  create background workers
             classifyDocumentBackgroundWorker = new BackgroundWorker();
             classifyDocumentBackgroundWorker.DoWork += new DoWorkEventHandler(classifyDocumentBackgroundWorker_DoWork);
-            //m_oWorker.ProgressChanged += new ProgressChangedEventHandler(m_oWorker_ProgressChanged);
+			//classifyDocumentBackgroundWorker.ProgressChanged += new ProgressChangedEventHandler(ProgressFunction);
             classifyDocumentBackgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(classifyDocumentBackgroundWorker_RunWorkerCompleted);
             classifyDocumentBackgroundWorker.WorkerReportsProgress = false;
             classifyDocumentBackgroundWorker.WorkerSupportsCancellation = false;
 
             addPredefinedCategoriesBackgroundWorker = new BackgroundWorker();
             addPredefinedCategoriesBackgroundWorker.DoWork += new DoWorkEventHandler(addPredefinedCategoriesBackgroundWorker_DoWork);
-            //m_oWorker.ProgressChanged += new ProgressChangedEventHandler(m_oWorker_ProgressChanged);
+			addPredefinedCategoriesBackgroundWorker.ProgressChanged += new ProgressChangedEventHandler( ProgressFunction );
             addPredefinedCategoriesBackgroundWorker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(addPredefinedCategoriesBackgroundWorker_RunWorkerCompleted);
-            addPredefinedCategoriesBackgroundWorker.WorkerReportsProgress = false;
+            addPredefinedCategoriesBackgroundWorker.WorkerReportsProgress = true;
             addPredefinedCategoriesBackgroundWorker.WorkerSupportsCancellation = false;
 
 			/// Init PDFs loading controls
@@ -95,10 +101,40 @@ namespace PDFAnal
 			classifiedDocuments = new ClassifiedCollection();
 		}
 
+		#region progress
 
-        #region button clicks
+		private void ProgressFunction( object sender, ProgressChangedEventArgs e )
+		{
+			progressWindow.SetProgress( e.ProgressPercentage );
+		}
 
-        private void ProcessPDFBButton_Click(object sender, RoutedEventArgs e)
+		private void ShowProgressIndeterminate()
+		{
+			progressWindow.progressBar.IsIndeterminate = true;
+			progressWindow.Visibility = Visibility.Visible;
+			progressWindow.Show();
+			progressWindow.Focus();
+		}
+
+		private void ShowProgressPercentage()
+		{
+			progressWindow.progressBar.IsIndeterminate = false;
+			progressWindow.Visibility = Visibility.Visible;
+			progressWindow.Show();
+			progressWindow.Focus();
+		}
+
+		private void HideProgress()
+		{
+			progressWindow.Visibility = Visibility.Hidden;
+		}
+
+		#endregion
+
+
+		#region button clicks
+
+		private void ProcessPDFBButton_Click(object sender, RoutedEventArgs e)
         {
 			LoadPDFButton_Click( sender, e );
 
@@ -110,7 +146,8 @@ namespace PDFAnal
             
             LabelClassifiedAs.Content = "Analyzing document...";
 
-            classifyDocumentBackgroundWorker.RunWorkerAsync();
+			ShowProgressIndeterminate();
+			classifyDocumentBackgroundWorker.RunWorkerAsync();
         }
 
         private void LoadPDFButton_Click(object sender, RoutedEventArgs e)
@@ -156,7 +193,9 @@ namespace PDFAnal
         private void ButtonLoadPredefinedCategories_Click(object sender, RoutedEventArgs e)
         {
             SetViewEnabled(false);
-            addPredefinedCategoriesBackgroundWorker.RunWorkerAsync();
+			ShowProgressPercentage();
+
+			addPredefinedCategoriesBackgroundWorker.RunWorkerAsync();
         }
 
         private void Test_Click(object sender, RoutedEventArgs e)
@@ -176,6 +215,7 @@ namespace PDFAnal
         void classifyDocumentBackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             onClassificationFinish(e.Result);
+			HideProgress();
         }
 
         /// <summary>
@@ -204,18 +244,29 @@ namespace PDFAnal
             updateCategories(classifier.CategoriesNew.Keys.ToList<object>());
             predefinedCategoriesLoaded = true;
             SetViewEnabled(true);
+			HideProgress();
         }
 
         void addPredefinedCategoriesBackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            //  load categories from categories directory
-            string[] filePaths = predefinedCategoriesFilePaths();
+			BackgroundWorker worker = sender as BackgroundWorker;
+
+			//  load categories from categories directory
+			string[] filePaths = predefinedCategoriesFilePaths();
+			var numProgresses = filePaths.Length * 2;
+			double progress = 0;
+
             foreach (string filePath in filePaths)
             {
                 string categoryDefinition = System.IO.File.ReadAllText(filePath);
                 string documentName = System.IO.Path.GetFileName(filePath);
                 documentName = documentName.Replace(".txt", "");
-                classifier.AddCategory(documentName, categoryDefinition);
+
+				worker.ReportProgress( (int)( 100 * progress++ / (double)numProgresses ) );
+
+				classifier.AddCategory(documentName, categoryDefinition);
+
+				worker.ReportProgress( (int)(100 * progress++ / (double)numProgresses) );
             }
         }
 
@@ -284,7 +335,6 @@ namespace PDFAnal
         private void SetViewEnabled(bool enabled)
         {
             ProcessPDFBButton.IsEnabled = enabled;
-            LoadPDFButton.IsEnabled = enabled;
             TestButton.IsEnabled = enabled;
             ButtonAddCategory.IsEnabled = enabled;
             ButtonLoadPredefinedCategories.IsEnabled = enabled && !predefinedCategoriesLoaded;
@@ -327,5 +377,10 @@ namespace PDFAnal
 			DocumentNameLabel.Content = fileName;
 		}
 
+		private void Window_Closing( object sender, CancelEventArgs e )
+		{
+			progressWindow.Close();
+
+		}
 	}
 }
