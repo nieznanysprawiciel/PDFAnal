@@ -21,16 +21,16 @@ namespace PDFAnal
         private WordNetEngine wordNetEngine;
         private WordNetSimilarityModel semanticSimilarityModel;
 
-        public Dictionary<string, Pair<Dictionary<SynSet, int>, int>> CategoriesNew { get; private set; }
-
-        //public Set<SynSet> Categories { get; private set; }
+        //public Dictionary<string, Pair<Dictionary<SynSet, int>, int>> CategoriesNew { get; private set; }
+        public List<Category> CategoriesNew { get; private set;  }
 
         public Classifier()
         {
             wordNetEngine = new WordNetEngine(@"..\..\resources", false);
             semanticSimilarityModel = new WordNetSimilarityModel(wordNetEngine);
 
-            CategoriesNew = new Dictionary<string, Pair<Dictionary<SynSet, int>, int>>();
+            //CategoriesNew = new Dictionary<string, Pair<Dictionary<SynSet, int>, int>>();
+            CategoriesNew = new List<Category>();
         }
 
         public void AddCategory(string name, string categoryDefiniction)
@@ -55,7 +55,8 @@ namespace PDFAnal
             }
 
             //  add category
-            CategoriesNew[name] = new Pair<Dictionary<SynSet, int>, int>(resultingSynSetsDict, importantWordsCont);
+            //CategoriesNew[name] = new Pair<Dictionary<SynSet, int>, int>(resultingSynSetsDict, importantWordsCont);
+            CategoriesNew.Add(new Category(name, importantWordsCont, resultingSynSetsDict));
         }
 
         public object Classify(Document document)
@@ -417,13 +418,23 @@ namespace PDFAnal
                 docWordCount += x.Value;
             }
 
-            Pair<string, double> bestCategory = null;
+            //Pair<string, double> bestCategory = null;
+
+            //  sort document synsets decreasingly accordint to score
+            List<KeyValuePair<SynSet, int>> documentTempList = documentSynSetsDict.ToList();
+            documentTempList.Sort(
+                delegate(KeyValuePair<SynSet, int> firstPair, KeyValuePair<SynSet, int> nextPair)
+                {
+                    return nextPair.Value.CompareTo(firstPair.Value);
+                }
+            );
+
             //Set<SynSet> objectSynSetsSet = new Set<SynSet>(resultingSynSetsDict.Keys.ToList());
             var resultList = new List<Pair<object, double>>();
 
             foreach (var category in CategoriesNew)
             {
-                string categoryName = category.Key;
+                string categoryName = category.Name;
 
                 /*
                 Set<SynSet> categorySynSetsSet = new Set<SynSet>(category.Value.First.Keys.ToList());
@@ -464,25 +475,19 @@ namespace PDFAnal
                 );
                 */
 
+
+                //List<KeyValuePair<SynSet, int>> categoryTempList = category.SynSetDictionary.ToList();
+                //categoryTempList.Sort(
+                //    delegate(KeyValuePair<SynSet, int> firstPair, KeyValuePair<SynSet, int> nextPair)
+                //    {
+                //        return nextPair.Value.CompareTo(firstPair.Value);
+                //    }
+                //);
+                List<KeyValuePair<SynSet, int>> categoryTempList = category.SynSetOrderedList;
+
                 //  use top k synsets
-                int k = 10;
+                int k = 100;
                 Utility.Log("top " + k + ": ");
-                List<KeyValuePair<SynSet, int>> categoryTempList = category.Value.First.ToList();
-                categoryTempList.Sort(
-                    delegate(KeyValuePair<SynSet, int> firstPair, KeyValuePair<SynSet, int> nextPair)
-                    {
-                        return nextPair.Value.CompareTo(firstPair.Value);
-                    }
-                );
-
-                List<KeyValuePair<SynSet, int>> documentTempList = documentSynSetsDict.ToList();
-                documentTempList.Sort(
-                    delegate(KeyValuePair<SynSet, int> firstPair, KeyValuePair<SynSet, int> nextPair)
-                    {
-                        return nextPair.Value.CompareTo(firstPair.Value);
-                    }
-                );
-
 
                 // compute category - document cosine similarity
                 Set<SynSet> alreadyProcessedSynSets = new Set<SynSet>();    //  TODO reuse it with all categories
@@ -508,7 +513,7 @@ namespace PDFAnal
                         documentSynSetWordCount = 0;
                     }
                     var categorySynSetWordCount = categorySynSetInfo.Value;
-                    int cateogryWordCount = category.Value.Second;
+                    int cateogryWordCount = category.WordCount;
 
                     //  compute cosine similarity
                     categoryDocumentCosineSimilarityNumerator += (double)(categorySynSetWordCount * documentSynSetWordCount) / (cateogryWordCount * docWordCount);
@@ -516,6 +521,8 @@ namespace PDFAnal
                     categoryDocumentCosineSimilarityDenumerator2 += (double)(documentSynSetWordCount * documentSynSetWordCount) / (docWordCount * docWordCount) ;
 
                     alreadyProcessedSynSets.Add(categorySynSet);
+
+                    Utility.Log(categoryDocumentCosineSimilarityNumerator + " / " + categoryDocumentCosineSimilarityDenumerator1 + " * " + categoryDocumentCosineSimilarityDenumerator2);
 
                     //  log
                     Utility.Log("--- category synset " + count + " -->");
@@ -545,17 +552,19 @@ namespace PDFAnal
                     }
 
                     int categorySynSetWordCount;
-                    if (!category.Value.First.TryGetValue(documentSynSet, out categorySynSetWordCount))
+                    if (!category.SynSetDictionary.TryGetValue(documentSynSet, out categorySynSetWordCount))
                     {
                         categorySynSetWordCount = 0;
                     }
-                    int cateogryWordCount = category.Value.Second;
+                    int cateogryWordCount = category.WordCount;
                     var documentSynSetWordCount = documentSynSetInfo.Value;
 
                     //  compute cosine similarity
                     categoryDocumentCosineSimilarityNumerator += (double)(categorySynSetWordCount * documentSynSetWordCount) / (cateogryWordCount * docWordCount);
                     categoryDocumentCosineSimilarityDenumerator1 += (double)(categorySynSetWordCount * categorySynSetWordCount) / (cateogryWordCount * cateogryWordCount);
                     categoryDocumentCosineSimilarityDenumerator2 += (double)(documentSynSetWordCount * documentSynSetWordCount) / (docWordCount * docWordCount);
+
+                    Utility.Log(categoryDocumentCosineSimilarityNumerator + " / " + categoryDocumentCosineSimilarityDenumerator1 + " * " + categoryDocumentCosineSimilarityDenumerator2);
 
                     alreadyProcessedSynSets.Add(documentSynSet);
 
@@ -574,24 +583,24 @@ namespace PDFAnal
                 Debug.Assert(categoryDocumentCosineSimilarityDenominator > 0.0d);
                 double categoryDocumentCosineSimilarity = (double) categoryDocumentCosineSimilarityNumerator / categoryDocumentCosineSimilarityDenominator;
 
-                Utility.Log(categoryName + "similarity:" + categoryDocumentCosineSimilarity);
+                Utility.Log(categoryName + " similarity:" + categoryDocumentCosineSimilarity);
 
                 //  add category sim score to result list
                 resultList.Add(new Pair<object, double>(categoryName, categoryDocumentCosineSimilarity));
 
                 //  pick best category
-                if (bestCategory == null)
-                {
-                    bestCategory = new Pair<string, double>(categoryName, categoryDocumentCosineSimilarity);
-                }
-                else
-                {
-                    if (categoryDocumentCosineSimilarity > bestCategory.Second)
-                    {
-                        bestCategory.First = categoryName;
-                        bestCategory.Second = categoryDocumentCosineSimilarity;
-                    }
-                }
+                //if (bestCategory == null)
+                //{
+                //    bestCategory = new Pair<string, double>(categoryName, categoryDocumentCosineSimilarity);
+                //}
+                //else
+                //{
+                //    if (categoryDocumentCosineSimilarity > bestCategory.Second)
+                //    {
+                //        bestCategory.First = categoryName;
+                //        bestCategory.Second = categoryDocumentCosineSimilarity;
+                //    }
+                //}
 
             }
 

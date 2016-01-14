@@ -59,7 +59,7 @@ namespace PDFAnal
 
 
             classifier = new Classifier();
-            updateCategories(classifier.CategoriesNew.Keys.ToList<object>());
+            updateCategories(classifier.CategoriesNew);
             
             /*
             //categories
@@ -210,7 +210,7 @@ namespace PDFAnal
             }
 
             //  update View
-            updateCategories(classifier.CategoriesNew.Keys.ToList<object>());
+            updateCategories(classifier.CategoriesNew);
 
         }
 
@@ -315,7 +315,7 @@ namespace PDFAnal
         void addPredefinedCategoriesBackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             //  update View
-            updateCategories(classifier.CategoriesNew.Keys.ToList<object>());
+            updateCategories(classifier.CategoriesNew);
             predefinedCategoriesLoaded = true;
             SetViewEnabled(true);
 			HideProgress();
@@ -363,12 +363,12 @@ namespace PDFAnal
 
 		#region view manipulations
 
-		public void updateCategories(List<object> categories)
+		public void updateCategories(List<Category> categories)
         {
             ListBoxCategories.Items.Clear();
             foreach (var category in categories)
             {
-                ListBoxCategories.Items.Add(category);
+                ListBoxCategories.Items.Add(category.Name);
             }
         }
 
