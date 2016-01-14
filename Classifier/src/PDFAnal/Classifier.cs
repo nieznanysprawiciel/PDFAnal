@@ -5,11 +5,13 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using System.IO;
+using System.Windows;
 using org.pdfclown.files;
 using org.pdfclown.documents;
 using org.pdfclown.tools;
 using org.pdfclown.documents.contents;
 using org.pdfclown.documents.contents.objects;
+
 
 using LAIR.ResourceAPIs.WordNet;
 using LAIR.Collections.Generic;
@@ -33,13 +35,30 @@ namespace PDFAnal
             CategoriesNew = new List<Category>();
         }
 
-        public void AddCategory(string name, string categoryDefiniction)
+        public void AddPrecomputedCategory(string precomputedCategory)
         {
-            string[] wordArray = Split(categoryDefiniction);
-            AddCategory(name, wordArray.ToList());
+            Category newPredefinedCategory = Category.FromString(wordNetEngine, precomputedCategory);
+            if (newPredefinedCategory == null)
+            {
+                MessageBox.Show("Failed to load predefined category");
+                return;
+            }
+            CategoriesNew.Add(newPredefinedCategory);
         }
 
-        public void AddCategory(string name, List<string> wordList)
+        /// <summary>
+        /// Adds category
+        /// </summary>
+        /// <returns>
+        /// Return processed category in String
+        /// </returns>
+        public Category AddCategory(string name, string categoryDefiniction)
+        {
+            string[] wordArray = Split(categoryDefiniction);
+            return AddCategory(name, wordArray.ToList());
+        }
+
+        private Category AddCategory(string name, List<string> wordList)
         {
             //  create stemming dictionary
             Dictionary<string, List<string>> stemmingDict = CreateStemmingDictionary(wordList);    //  <stemmedWord, list<word>>
@@ -56,7 +75,9 @@ namespace PDFAnal
 
             //  add category
             //CategoriesNew[name] = new Pair<Dictionary<SynSet, int>, int>(resultingSynSetsDict, importantWordsCont);
-            CategoriesNew.Add(new Category(name, importantWordsCont, resultingSynSetsDict));
+            Category c = new Category(name, importantWordsCont, resultingSynSetsDict);
+            CategoriesNew.Add(c);
+            return c;
         }
 
         public object Classify(Document document)

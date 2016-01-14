@@ -27,6 +27,8 @@ namespace PDFAnal
     /// </summary>
     public partial class MainWindow : Window
     {
+        private static string PREDEFINED_CATAGORIES_FOLDER = @"..\categories\";
+
         private Document document;
         private Classifier classifier;
 		private ClassifiedCollection classifiedDocuments;
@@ -206,7 +208,12 @@ namespace PDFAnal
                 string categoryDefinition = System.IO.File.ReadAllText(fileName);
                 string documentName = System.IO.Path.GetFileName(fileName);
                 documentName = documentName.Replace(".txt", "");
-                classifier.AddCategory(documentName, categoryDefinition);
+                Category newCategory = classifier.AddCategory(documentName, categoryDefinition);
+                
+                //  write new category to file
+                System.IO.StreamWriter file = new System.IO.StreamWriter(PREDEFINED_CATAGORIES_FOLDER + newCategory.Name + ".category");
+                file.WriteLine(newCategory.ToString());
+                file.Close();
             }
 
             //  update View
@@ -334,11 +341,11 @@ namespace PDFAnal
             {
                 string categoryDefinition = System.IO.File.ReadAllText(filePath);
                 string documentName = System.IO.Path.GetFileName(filePath);
-                documentName = documentName.Replace(".txt", "");
+                documentName = documentName.Replace(".category", "");
 
 				worker.ReportProgress( (int)( 100 * progress++ / (double)numProgresses ) );
 
-				classifier.AddCategory(documentName, categoryDefinition);
+				classifier.AddPrecomputedCategory(categoryDefinition);
 
 				worker.ReportProgress( (int)(100 * progress++ / (double)numProgresses) );
             }
@@ -346,7 +353,7 @@ namespace PDFAnal
 
         private string[] predefinedCategoriesFilePaths()
         {
-            return Directory.GetFiles(@"..\categories\", "*.txt");
+            return Directory.GetFiles(PREDEFINED_CATAGORIES_FOLDER, "*.category");
         }
 
 		private void DoWorkLoadPDFsWorker( object sender, DoWorkEventArgs e )
