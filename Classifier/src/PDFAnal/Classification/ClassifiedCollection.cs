@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
 
 namespace PDFAnal.Classification
 {
@@ -20,7 +18,7 @@ namespace PDFAnal.Classification
 			doneClassifications [ MakePath( directory, fileName ) ] = newModel;
 		}
 
-		public void AddPdfModel( string path, ClassifiedPdfModel newModel )
+		private void AddPdfModel( string path, ClassifiedPdfModel newModel )
 		{
 			doneClassifications[ path ] = newModel;
 		}
@@ -28,12 +26,17 @@ namespace PDFAnal.Classification
 		public ClassifiedPdfModel GetPdfModel( string directory, string fileName )
 		{
 			string key = MakePath( directory, fileName );
+
 			if( doneClassifications.ContainsKey( key ) )
 				return doneClassifications[ key ];
 			return null;
 		}
 
 		private string MakePath( string directory, string fileName )
-		{		return directory + "\\" + fileName;		}
+		{
+			string path = directory + "\\" + fileName;
+			path = Path.GetFullPath( path );
+			return path;
+		}
 	}
 }
