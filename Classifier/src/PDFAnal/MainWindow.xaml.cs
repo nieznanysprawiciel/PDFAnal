@@ -440,14 +440,17 @@ namespace PDFAnal
 		private void directoryContentListBox_SelectionChanged( object sender, SelectionChangedEventArgs e )
 		{
 			var selectedItem = directoryContentListBox.SelectedItem as FileItem;
+			if ( selectedItem != null )
+			{
 
-			string fileName = selectedItem.Name;
-			string directory = pdfsDirectoryTextBox.Text;
+				string fileName = selectedItem.Name;
+				string directory = pdfsDirectoryTextBox.Text;
 
-			// May be null, but that's no problem.
-			var dataModel = classifiedDocuments.GetPdfModel( directory, fileName );
-			ListBoxClassificationResult.DataContext = dataModel;
-			DocumentNameLabel.Content = fileName;
+				// May be null, but that's no problem.
+				var dataModel = classifiedDocuments.GetPdfModel( directory, fileName );
+				ListBoxClassificationResult.DataContext = dataModel;
+				DocumentNameLabel.Content = fileName;
+			}
 		}
 
 		private void Window_Closing( object sender, CancelEventArgs e )
