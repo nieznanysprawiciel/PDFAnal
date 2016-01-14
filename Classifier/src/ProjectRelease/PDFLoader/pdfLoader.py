@@ -8,9 +8,10 @@ from cookielib import CookieJar
 from pyPdf import PdfFileWriter, PdfFileReader
 from StringIO import StringIO
 
-def prapareWeb( address, port ):
-	socks.setdefaultproxy( socks.PROXY_TYPE_SOCKS5, address, port )
-	socket.socket = socks.socksocket
+def prapareWeb( address, port, useproxy = True ):
+	if useproxy:
+		socks.setdefaultproxy( socks.PROXY_TYPE_SOCKS5, address, port )
+		socket.socket = socks.socksocket
 
 	cookieEater = CookieJar()
 	webOpener = urllib2.build_opener( urllib2.HTTPCookieProcessor( cookieEater ) )
@@ -133,8 +134,8 @@ def loadPDF( address, outputFile, webOpener ):
 
 
 # This is main function for loading PDFs
-def loadData( outputDirectory, numberDocuments, proxyAddress = "127.0.0.1", proxyPort = 12345 ):
-	webOpener = prapareWeb( proxyAddress, proxyPort )
+def loadData( outputDirectory, numberDocuments, useProxy = False, proxyAddress = "127.0.0.1", proxyPort = 12345 ):
+	webOpener = prapareWeb( proxyAddress, proxyPort, useProxy )
 
 	pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc' + "&hc=" + str( numberDocuments )
 
