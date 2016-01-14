@@ -137,28 +137,38 @@ def loadPDF( address, outputFile, webOpener ):
 def loadData( outputDirectory, numberDocuments, useProxy = False, proxyAddress = "127.0.0.1", proxyPort = 12345 ):
 	webOpener = prapareWeb( proxyAddress, proxyPort, useProxy )
 
-	pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc' + "&hc=" + str( numberDocuments )
-
-	print "Loading page: [" + pageName + "]"
-	htmlContent = loadWebPage( pageName, webOpener )
-
-	pdfList = extractLinksAndNamesFromPage( htmlContent );
+	maxPortion = 1
+	remainingDocs = numberDocuments
+	documentOffset = 1
 	
-	for element in pdfList:
+	while remainingDocs > 0:
+		pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc' + "&hc=" + str( maxPortion ) + "&rs=" + str( documentOffset )
 
-		pageToLoad = element[ 'link' ]
-		print "Loading page: [" + pageToLoad + "]"
+		print "Loading page: [" + pageName + "]"
+		htmlContent = loadWebPage( pageName, webOpener )
 
-		pageWithPdfContent = loadWebPage( pageToLoad, webOpener )
-		print "Page loaded. Looking for pdf links..."
+		pdfList = extractLinksAndNamesFromPage( htmlContent );
+		
+		for element in pdfList:
 
-		directPdfLink = extractLinksFromPage2( pageWithPdfContent )
-		print "Found link: " + directPdfLink
+			pageToLoad = element[ 'link' ]
+			print "Loading page: [" + pageToLoad + "]"
 
-		#saveFile = makePDFNameFromLink( directPdfLink, outputDirectory )
-		saveFile = outputDirectory + "\\" + element[ 'name' ] + ".pdf"
-		if loadPDF( directPdfLink, saveFile, webOpener ):
-			print "PDF saved as: " + saveFile
+			pageWithPdfContent = loadWebPage( pageToLoad, webOpener )
+			print "Page loaded. Looking for pdf links..."
+
+			directPdfLink = extractLinksFromPage2( pageWithPdfContent )
+			print "Found link: " + directPdfLink
+
+			#saveFile = makePDFNameFromLink( directPdfLink, outputDirectory )
+			saveFile = outputDirectory + "\\" + element[ 'name' ] + ".pdf"
+			if loadPDF( directPdfLink, saveFile, webOpener ):
+				print "PDF saved as: " + saveFile
+		
+		remainingDocs = remainingDocs - maxPortion
+		documentOffset = documentOffset + maxPortion
+		if remainingDocs < maxPortion:
+			maxPortion = remainingDocs
 
 
 #######################################################################################################
