@@ -32,7 +32,7 @@ namespace PDFAnal.Classification
 			return null;
 		}
 
-		private string MakePath( string directory, string fileName )
+		public string MakePath( string directory, string fileName )
 		{
 			string path = directory + "\\" + fileName;
 			path = Path.GetFullPath( path );

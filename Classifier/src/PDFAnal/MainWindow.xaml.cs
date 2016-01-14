@@ -243,7 +243,7 @@ namespace PDFAnal
 
 			foreach ( var fileInfo in infos )
 			{
-				string fullPath = directory + "\\" + fileInfo.Name;
+				string fullPath = classifiedDocuments.MakePath( directory, fileInfo.Name );
 
 				org.pdfclown.files.File file = new org.pdfclown.files.File( fullPath );
 				document = file.Document;
