@@ -10,7 +10,7 @@ namespace PDFAnal.Classification
 	public class ClassifiedPdfModel
 	{
 		public string FileName { get; set; }
-		public List<ClassifiedItem> Items { get; }
+        public List<ClassifiedItem> Items { get; set; }
 
 
 		public ClassifiedPdfModel()
