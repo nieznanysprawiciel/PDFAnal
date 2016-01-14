@@ -137,7 +137,7 @@ def loadPDF( address, outputFile, webOpener ):
 def loadData( outputDirectory, numberDocuments, useProxy = False, proxyAddress = "127.0.0.1", proxyPort = 12345 ):
 	webOpener = prapareWeb( proxyAddress, proxyPort, useProxy )
 
-	maxPortion = 1
+	maxPortion = 200
 	remainingDocs = numberDocuments
 	documentOffset = 1
 	
