@@ -185,7 +185,7 @@ namespace PDFAnal
 
 		private void LoadPDF( string directory, string fileName )
 		{
-			string fullPath = directory + "\\" + fileName;
+			string fullPath = classifiedDocuments.MakePath( directory, fileName );
 
 			org.pdfclown.files.File file = new org.pdfclown.files.File( fullPath );
 			document = file.Document;
