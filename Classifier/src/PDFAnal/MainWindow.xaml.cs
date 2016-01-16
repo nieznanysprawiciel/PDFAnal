@@ -186,11 +186,15 @@ namespace PDFAnal
 		private void LoadPDF( string directory, string fileName )
 		{
 			string fullPath = classifiedDocuments.MakePath( directory, fileName );
+			string extension = System.IO.Path.GetExtension( fullPath );
 
-			org.pdfclown.files.File file = new org.pdfclown.files.File( fullPath );
-			document = file.Document;
-			DocumentNameLabel.Content = fileName;
-			ProcessPDFBButton.IsEnabled = true;
+			if ( extension == ".pdf" )
+			{
+				org.pdfclown.files.File file = new org.pdfclown.files.File( fullPath );
+				document = file.Document;
+				DocumentNameLabel.Content = fileName;
+				ProcessPDFBButton.IsEnabled = true;
+			}
 		}
 
         private void ButtonAddCategory_Click(object sender, RoutedEventArgs e)
@@ -251,32 +255,36 @@ namespace PDFAnal
 			foreach ( var fileInfo in infos )
 			{
 				string fullPath = classifiedDocuments.MakePath( directory, fileInfo.Name );
+				string extension = System.IO.Path.GetExtension( fullPath );
 
-				org.pdfclown.files.File file = new org.pdfclown.files.File( fullPath );
-				document = file.Document;
-				if ( document == null )
-					continue;
-
-				var category = classifier.Classify( document );
-				if ( category != null )
+				if ( extension == ".pdf" )
 				{
-					ClassifiedPdfModel newModel = new ClassifiedPdfModel();
+					org.pdfclown.files.File file = new org.pdfclown.files.File( fullPath );
+					document = file.Document;
+					if ( document == null )
+						continue;
 
-					int i = 0;
-					foreach ( var classResult in (List<Pair<object, double>>)category )
+					var category = classifier.Classify( document );
+					if ( category != null )
 					{
-						++i;
-						ClassifiedItem newItem = new ClassifiedItem();
-						newItem.Category = classResult.First as string;
-						newItem.Compatibility = classResult.Second.ToString();
+						ClassifiedPdfModel newModel = new ClassifiedPdfModel();
 
-						newModel.AddClassificationData( newItem );
+						int i = 0;
+						foreach ( var classResult in (List<Pair<object, double>>)category )
+						{
+							++i;
+							ClassifiedItem newItem = new ClassifiedItem();
+							newItem.Category = classResult.First as string;
+							newItem.Compatibility = classResult.Second.ToString();
+
+							newModel.AddClassificationData( newItem );
+						}
+
+						classifiedDocuments.AddPdfModel( directory, fileInfo.Name, newModel );
 					}
 
-					classifiedDocuments.AddPdfModel( directory, fileInfo.Name, newModel );
+					worker.ReportProgress( (int)( 100 * progress++ / (double)numPDFs ) );
 				}
-
-				worker.ReportProgress( (int)( 100 * progress++ / (double)numPDFs ) );
 			}
 		}
 
