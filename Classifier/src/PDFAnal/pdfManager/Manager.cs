@@ -31,17 +31,25 @@ namespace PDFAnal.pdfManager
 			directoryWatcher.Path = path;
 			directoryWatcher.IncludeSubdirectories = false;
 			directoryWatcher.Filter = "*.pdf";
-			directoryWatcher.NotifyFilter = NotifyFilters.LastAccess |
-						 NotifyFilters.LastWrite |
-						 NotifyFilters.FileName |
-						 NotifyFilters.DirectoryName;
+			directoryWatcher.NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.FileName | NotifyFilters.DirectoryName;
 
 			directoryWatcher.Changed += new FileSystemEventHandler( OnDirectoryChanged );
 			directoryWatcher.Created += new FileSystemEventHandler( OnDirectoryChanged );
 			directoryWatcher.Deleted += new FileSystemEventHandler( OnDirectoryChanged );
 			directoryWatcher.Renamed += new RenamedEventHandler( OnDirectoryRenamed );
+			directoryWatcher.Error += new ErrorEventHandler( OnError );
 
 			directoryWatcher.EnableRaisingEvents = true;
+		}
+
+		private void OnError( object source, ErrorEventArgs e )
+		{
+			fileModel.SetNewDirectory( watcherDirectory );
+		}
+
+		private void ChangeWatcherDirectory( string path )
+		{
+			directoryWatcher.Path = path;
 		}
 
 		private void OnDirectoryChanged( object sender, FileSystemEventArgs e )
@@ -131,7 +139,10 @@ namespace PDFAnal.pdfManager
 		public void				SetPDFsDirectory( string directory )
 		{
 			watcherDirectory = directory;
-			InitFileSystemWatcher( watcherDirectory );
+			if ( directoryWatcher == null )
+				InitFileSystemWatcher( watcherDirectory );
+			else
+				ChangeWatcherDirectory( watcherDirectory );
 			fileModel.SetNewDirectory( watcherDirectory );
 		}
 
