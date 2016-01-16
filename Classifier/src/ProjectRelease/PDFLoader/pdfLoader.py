@@ -73,10 +73,12 @@ def extractLinksAndNamesFromPage( htmlContent ):
 	for document in documents:
 		pdfLink = document.pdf.extract()
 		pdfName = document.title.extract()
+		pdfAbstract = document.abstract.extract()
 
 		newPdfData = dict()
 		newPdfData[ 'link' ] = pdfLink.string
 		newPdfData[ 'name' ] = slugify( pdfName.string )
+		newPdfData[ 'abstract' ] = pdfAbstract.string
 		pdfList.append( newPdfData );
 
 	return pdfList
@@ -109,7 +111,6 @@ def makePDFNameFromLink( link, filePath ):
 	return targetFile
 
 
-
 def loadPDF( address, outputFile, webOpener ):
 	writer = PdfFileWriter()
 
@@ -140,8 +141,12 @@ def loadData( outputDirectory, numberDocuments, useProxy = False, proxyAddress =
 	maxPortion = 200
 	remainingDocs = numberDocuments
 	documentOffset = 1
+
 	
 	while remainingDocs > 0:
+		if remainingDocs < maxPortion:
+			maxPortion = remainingDocs
+	
 		pageName = 'http://ieeexplore.ieee.org/gateway/ipsSearch.jsp?ctype=Conferences&sortfield=py&sortorder=desc' + "&hc=" + str( maxPortion ) + "&rs=" + str( documentOffset )
 
 		print "Loading page: [" + pageName + "]"
@@ -161,14 +166,19 @@ def loadData( outputDirectory, numberDocuments, useProxy = False, proxyAddress =
 			print "Found link: " + directPdfLink
 
 			#saveFile = makePDFNameFromLink( directPdfLink, outputDirectory )
-			saveFile = outputDirectory + "\\" + element[ 'name' ] + ".pdf"
-			if loadPDF( directPdfLink, saveFile, webOpener ):
-				print "PDF saved as: " + saveFile
+			saveFile = outputDirectory + "\\" + element[ 'name' ]
+			savePdf = saveFile + ".pdf"
+			saveAbstract = saveFile + ".abstract"
+			if loadPDF( directPdfLink, savePdf, webOpener ):
+				abstractFile = open( saveAbstract, 'w' )
+				abstractFile.write( element[ 'abstract' ] )
+				abstractFile.close()
+				
+				print "PDF saved as: " + savePdf
+				print "Abstract saved as: " + saveAbstract
 		
 		remainingDocs = remainingDocs - maxPortion
 		documentOffset = documentOffset + maxPortion
-		if remainingDocs < maxPortion:
-			maxPortion = remainingDocs
 
 
 #######################################################################################################
