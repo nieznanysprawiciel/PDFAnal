@@ -276,6 +276,7 @@ namespace PDFAnal
 							ClassifiedItem newItem = new ClassifiedItem();
 							newItem.Category = classResult.First as string;
 							newItem.Compatibility = classResult.Second.ToString();
+							newItem.CompatibilityAbstract = classResult.Second.ToString();
 
 							newModel.AddClassificationData( newItem );
 						}
@@ -404,6 +405,7 @@ namespace PDFAnal
 					ClassifiedItem newItem = new ClassifiedItem();
 					newItem.Category = classResult.First as string;
 					newItem.Compatibility = classResult.Second.ToString();
+					newItem.CompatibilityAbstract = classResult.Second.ToString();
 
 					newModel.AddClassificationData( newItem );
 					//ListBoxClassificationResult.Items.Add(i + ". " + classResult.First + "\t\t\t\t" + classResult.Second);

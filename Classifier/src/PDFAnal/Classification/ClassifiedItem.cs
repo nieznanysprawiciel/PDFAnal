@@ -10,5 +10,6 @@ namespace PDFAnal.Classification
 	{
 		public string Category { get; set; }
 		public string Compatibility { get; set; }
+		public string CompatibilityAbstract { get; set; }
 	}
 }
