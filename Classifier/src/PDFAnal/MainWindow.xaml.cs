@@ -199,8 +199,8 @@ namespace PDFAnal
                 //  try to load .abstract file
                 try
                 {
-                    string abstractFileName = fileName.Replace(".pdf", ".abstract");
-                    string abstractFileContent = System.IO.File.ReadAllText(abstractFileName);
+                    string abstractFullPath = fullPath.Replace(".pdf", ".abstract");
+                    string abstractFileContent = System.IO.File.ReadAllText(abstractFullPath);
                     abstractContent = abstractFileContent;
                 }
                 catch (Exception e)
@@ -280,19 +280,39 @@ namespace PDFAnal
 					if ( document == null )
 						continue;
 
-					var category = classifier.Classify( document );
-					if ( category != null )
+                    try
+                    {
+                        string abstractFileName = fullPath.Replace(".pdf", ".abstract");
+                        string abstractFileContent = System.IO.File.ReadAllText(abstractFileName);
+                        abstractContent = abstractFileContent;
+                    }
+                    catch (Exception exception)
+                    {
+                        abstractContent = null;
+                        Utility.Log("file " + fullPath + " loaded without an abstract...");
+                    }
+
+
+					var classificationResult = classifier.Classify( document, abstractContent );
+					if ( classificationResult != null )
 					{
 						ClassifiedPdfModel newModel = new ClassifiedPdfModel();
 
-						int i = 0;
-						foreach ( var classResult in (List<Pair<object, double>>)category )
+						foreach ( var documentClassResult in classificationResult.DocumentClassificationRestult )
 						{
-							++i;
 							ClassifiedItem newItem = new ClassifiedItem();
-							newItem.Category = classResult.First as string;
-							newItem.Compatibility = classResult.Second.ToString();
-							newItem.CompatibilityAbstract = classResult.Second.ToString();
+                            newItem.Category = documentClassResult.First as string;
+                            newItem.Compatibility = documentClassResult.Second.ToString();
+
+                            //  abstract classification result
+                            if (classificationResult.AbstractClassificationRestult != null)
+                            {
+                                Double abstractCompatibilty;
+                                if (classificationResult.AbstractClassificationRestult.TryGetValue(documentClassResult.First, out abstractCompatibilty))
+                                {
+                                    newItem.CompatibilityAbstract = abstractCompatibilty.ToString();
+                                }
+                            }
 
 							newModel.AddClassificationData( newItem );
 						}
@@ -327,7 +347,6 @@ namespace PDFAnal
 		void classifyDocumentBackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
 			var selectedItem = directoryContentListBox.SelectedItem as FileItem;
-
 			onClassificationFinish(e.Result, selectedItem.Name);
 			HideProgress();
         }
@@ -340,8 +359,8 @@ namespace PDFAnal
         /// <param name="e"></param>
         void classifyDocumentBackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
-            var category = classifier.Classify(document);
-            e.Result = category;
+            Classifier.ClassificationResult classificationResult = classifier.Classify(document, abstractContent);
+            e.Result = classificationResult;
         }
 
         void addPredefinedCategoriesBackgroundWorker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -404,24 +423,33 @@ namespace PDFAnal
             }
         }
 
-        public void onClassificationFinish(Object category, string name)
+        public void onClassificationFinish(object classificationRes, string name)
         {
+            Classifier.ClassificationResult classificationResult = classificationRes as Classifier.ClassificationResult;
             SetViewEnabled(true);
             //LabelWait.Content = "";
-            if (category != null)
+            if (classificationResult != null)
             {
                 LabelClassifiedAs.Content = "classified as:";
 
 				ClassifiedPdfModel newModel = new ClassifiedPdfModel();
 
-                int i = 0;
-                foreach (var classResult in (List<Pair<object, double>>)category)
+                foreach (var documentClassResult in classificationResult.DocumentClassificationRestult)
                 {
-                    ++i;
-					ClassifiedItem newItem = new ClassifiedItem();
-					newItem.Category = classResult.First as string;
-					newItem.Compatibility = classResult.Second.ToString();
-					newItem.CompatibilityAbstract = classResult.Second.ToString();
+                    ClassifiedItem newItem = new ClassifiedItem();
+					newItem.Category = documentClassResult.First as string;
+					newItem.Compatibility = documentClassResult.Second.ToString();
+
+                    //  abstract classification result
+                    if (classificationResult.AbstractClassificationRestult != null)
+                    {
+                        Double abstractCompatibilty;
+                        if (classificationResult.AbstractClassificationRestult.TryGetValue(documentClassResult.First, out abstractCompatibilty))
+                        {
+                            newItem.CompatibilityAbstract = abstractCompatibilty.ToString();
+                        }
+                    }
+                    
 
 					newModel.AddClassificationData( newItem );
 					//ListBoxClassificationResult.Items.Add(i + ". " + classResult.First + "\t\t\t\t" + classResult.Second);

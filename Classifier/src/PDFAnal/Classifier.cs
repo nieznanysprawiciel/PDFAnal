@@ -80,21 +80,49 @@ namespace PDFAnal
             return c;
         }
 
-        public object Classify(Document document)
+        public ClassificationResult Classify(Document document, string abstractContent)
         {
-            //  extract word list
-            List<string> wordList = ExtractWords( document );
+            /*  lets process document    */
+            
+            //  extract document word list
+            List<string> documentWordList = ExtractWords( document );
 
+            //  classify document
+            List<Pair<object, double>> documentClassificationResult = Classify(documentWordList);
+
+
+            /*  lets process abstract   */
+
+            Dictionary<object, Double> abstractClassificationMap = null;
+
+            //  extract abstract word list
+            if (abstractContent != null)
+            {
+                List<string> abstractWordList = abstractContent.Split().ToList<string>();
+
+                //  classify abstract
+                var abstractClassificationResult = Classify(abstractWordList);
+                abstractClassificationMap = abstractClassificationResult.ToDictionary(x => x.First, x => x.Second);
+            } 
+
+
+            return new ClassificationResult(documentClassificationResult, abstractClassificationMap);
+
+        }
+
+
+        private List<Pair<object, double>> Classify(List<string> wordList)
+        {
             if (wordList.Count == 0)
             {
                 return null;
             }
 
             //  create stemming dictionary
-            Dictionary<string, List<string>> stemmingDict = CreateStemmingDictionary( wordList );    //  <stemmedWord, list<word>>
+            Dictionary<string, List<string>> stemmingDict = CreateStemmingDictionary(wordList);    //  <stemmedWord, list<word>>
 
             //  find synsets
-            Dictionary<SynSet, int> resultingSynSetsDict = FindSynsets(stemmingDict) ;   //  <SynSet, wordsCount>
+            Dictionary<SynSet, int> resultingSynSetsDict = FindSynsets(stemmingDict);   //  <SynSet, wordsCount>
 
             // lets classify it finally
             return ClassifyFinally(resultingSynSetsDict);
@@ -431,7 +459,7 @@ namespace PDFAnal
         }
         */
 
-        private object ClassifyFinally(Dictionary<SynSet, int> documentSynSetsDict)
+        private List<Pair<object,double>> ClassifyFinally(Dictionary<SynSet, int> documentSynSetsDict)
         {
             //  count doc words
             int docWordCount = 0;
@@ -683,6 +711,18 @@ namespace PDFAnal
             foreach (var word in closestReachableSynSet.Words)
             {
                 Utility.Log("\t" + word);
+            }
+        }
+
+        public class ClassificationResult
+        {
+            public List<Pair<object, double>> DocumentClassificationRestult { get; private set; }
+            public Dictionary<object, Double> AbstractClassificationRestult { get; private set; }
+
+            public ClassificationResult(List<Pair<object, double>> documentClassificationRestult, Dictionary<object, Double> abstractClassificationRestult)
+            {
+                DocumentClassificationRestult = documentClassificationRestult;
+                AbstractClassificationRestult = abstractClassificationRestult;
             }
         }
 
