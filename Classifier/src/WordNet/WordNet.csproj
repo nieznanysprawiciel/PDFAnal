@@ -46,11 +46,11 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>..\..\..\..\Libraries\</OutputPath>
+    <OutputPath>ProjectRelease\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <DocumentationFile>..\..\..\..\Libraries\LAIR.ResourceAPIs.WordNet.XML</DocumentationFile>
+    <DocumentationFile>ProjectRelease\LAIR.ResourceAPIs.WordNet.XML</DocumentationFile>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <ItemGroup>
