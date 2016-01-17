@@ -82,6 +82,7 @@ namespace PDFAnal
 
         public ClassificationResult Classify(Document document, string abstractContent)
         {
+
             /*  lets process document    */
             
             //  extract document word list
@@ -93,6 +94,7 @@ namespace PDFAnal
 
             /*  lets process abstract   */
 
+            List<Pair<object, Double>> abstractClassificationResult = null;
             Dictionary<object, Double> abstractClassificationMap = null;
 
             //  extract abstract word list
@@ -101,9 +103,29 @@ namespace PDFAnal
                 List<string> abstractWordList = abstractContent.Split().ToList<string>();
 
                 //  classify abstract
-                var abstractClassificationResult = Classify(abstractWordList);
+                abstractClassificationResult = Classify(abstractWordList);
                 abstractClassificationMap = abstractClassificationResult.ToDictionary(x => x.First, x => x.Second);
             } 
+
+            // log
+            if (documentClassificationResult != null)
+            {
+                Utility.Log("Classification results for " + document.File.Path);
+                Utility.Log("\tdocument:");
+                foreach (var docClassRes in documentClassificationResult)
+                {
+                    Utility.Log("\t\t" + docClassRes.First + " : " + docClassRes.Second);
+                }
+                if (abstractClassificationResult != null)
+                {
+                    Utility.Log("\abstract:");
+                    foreach (var absClassRes in abstractClassificationResult)
+                    {
+                        Utility.Log("\t\t" + absClassRes.First + " : " + absClassRes.Second);
+                    }
+                }
+                Utility.Log("\n\n");
+            }
 
 
             return new ClassificationResult(documentClassificationResult, abstractClassificationMap);
@@ -167,10 +189,18 @@ namespace PDFAnal
                     stopWordCount++;
                     continue;
                 }
-                nonStopWordsCount++;
 
                 //  stem word
                 string stemmedWord = Stemmer.Stem(wordLower);
+                
+                //  check id stemmed word is a stop word
+                if (StopWord.IsStopWord(stemmedWord))
+                {
+                    stopWordCount++;
+                    continue;
+                }
+                nonStopWordsCount++;
+                
                 if (stemmedWord.Length == 0 || stemmedWord.Equals(" "))
                 {
                     emptyStemsCount++;
@@ -483,6 +513,8 @@ namespace PDFAnal
 
             foreach (var category in CategoriesNew)
             {
+                //Utility.Log("Category " + category.Name);
+
                 string categoryName = category.Name;
 
                 /*
@@ -535,8 +567,8 @@ namespace PDFAnal
                 List<KeyValuePair<SynSet, int>> categoryTempList = category.SynSetOrderedList;
 
                 //  use top k synsets
-                int k = 100;
-                Utility.Log("top " + k + ": ");
+                int k = 40;
+                //Utility.Log("top " + k + ": ");
 
                 // compute category - document cosine similarity
                 Set<SynSet> alreadyProcessedSynSets = new Set<SynSet>();    //  TODO reuse it with all categories
@@ -571,16 +603,16 @@ namespace PDFAnal
 
                     alreadyProcessedSynSets.Add(categorySynSet);
 
-                    Utility.Log(categoryDocumentCosineSimilarityNumerator + " / " + categoryDocumentCosineSimilarityDenumerator1 + " * " + categoryDocumentCosineSimilarityDenumerator2);
+                    //Utility.Log(categoryDocumentCosineSimilarityNumerator + " / " + categoryDocumentCosineSimilarityDenumerator1 + " * " + categoryDocumentCosineSimilarityDenumerator2);
 
-                    //  log
-                    Utility.Log("--- category synset " + count + " -->");
-                    Utility.Log("\t" + categorySynSetWordCount + "/" + documentSynSetWordCount + " words " /* : [" + categoryDocumentCosineSimilarityNumerator + "/ sqrt(" + categoryDocumentCosineSimilarityDenumerator1 + ")sqrt(" + categoryDocumentCosineSimilarityDenumerator2 + ")]"*/);
-                    Utility.Log("\tsynset: ");
-                    foreach (var word in categorySynSet.Words)
-                    {
-                        Utility.Log("\t\t" + word);
-                    }
+                    ////  log
+                    //Utility.Log("--- category synset " + count + " -->");
+                    //Utility.Log("\t" + categorySynSetWordCount + "/" + documentSynSetWordCount + " words " /* : [" + categoryDocumentCosineSimilarityNumerator + "/ sqrt(" + categoryDocumentCosineSimilarityDenumerator1 + ")sqrt(" + categoryDocumentCosineSimilarityDenumerator2 + ")]"*/);
+                    //Utility.Log("\tsynset: ");
+                    //foreach (var word in categorySynSet.Words)
+                    //{
+                    //    Utility.Log("\t\t" + word);
+                    //}
                 }
 
                 //  document synSets
@@ -613,18 +645,18 @@ namespace PDFAnal
                     categoryDocumentCosineSimilarityDenumerator1 += (double)(categorySynSetWordCount * categorySynSetWordCount) / (cateogryWordCount * cateogryWordCount);
                     categoryDocumentCosineSimilarityDenumerator2 += (double)(documentSynSetWordCount * documentSynSetWordCount) / (docWordCount * docWordCount);
 
-                    Utility.Log(categoryDocumentCosineSimilarityNumerator + " / " + categoryDocumentCosineSimilarityDenumerator1 + " * " + categoryDocumentCosineSimilarityDenumerator2);
+                    //Utility.Log(categoryDocumentCosineSimilarityNumerator + " / " + categoryDocumentCosineSimilarityDenumerator1 + " * " + categoryDocumentCosineSimilarityDenumerator2);
 
                     alreadyProcessedSynSets.Add(documentSynSet);
 
-                    //  log
-                    Utility.Log("--- document synset " + count + " -->");
-                    Utility.Log("\t" + categorySynSetWordCount + "/" + documentSynSetWordCount + " words " /* : [" + categoryDocumentCosineSimilarityNumerator + "/ sqrt(" + categoryDocumentCosineSimilarityDenumerator1 + ")sqrt(" + categoryDocumentCosineSimilarityDenumerator2 + ")]"*/);
-                    Utility.Log("\tsynset: ");
-                    foreach (var word in documentSynSet.Words)
-                    {
-                        Utility.Log("\t\t" + word);
-                    }
+                    ////  log
+                    //Utility.Log("--- document synset " + count + " -->");
+                    //Utility.Log("\t" + categorySynSetWordCount + "/" + documentSynSetWordCount + " words " /* : [" + categoryDocumentCosineSimilarityNumerator + "/ sqrt(" + categoryDocumentCosineSimilarityDenumerator1 + ")sqrt(" + categoryDocumentCosineSimilarityDenumerator2 + ")]"*/);
+                    //Utility.Log("\tsynset: ");
+                    //foreach (var word in documentSynSet.Words)
+                    //{
+                    //    Utility.Log("\t\t" + word);
+                    //}
 
                 }
 
@@ -632,7 +664,7 @@ namespace PDFAnal
                 Debug.Assert(categoryDocumentCosineSimilarityDenominator > 0.0d);
                 double categoryDocumentCosineSimilarity = (double) categoryDocumentCosineSimilarityNumerator / categoryDocumentCosineSimilarityDenominator;
 
-                Utility.Log(categoryName + " similarity:" + categoryDocumentCosineSimilarity);
+                //Utility.Log(categoryName + " similarity:" + categoryDocumentCosineSimilarity);
 
                 //  add category sim score to result list
                 resultList.Add(new Pair<object, double>(categoryName, categoryDocumentCosineSimilarity));
@@ -712,6 +744,9 @@ namespace PDFAnal
             {
                 Utility.Log("\t" + word);
             }
+
+            Utility.Log("is stop word A:" + StopWord.IsStopWord("A".ToLower()));
+
         }
 
         public class ClassificationResult

@@ -293,8 +293,10 @@ namespace PDFAnal
                     }
 
 
+                    Utility.Log("Classifing " + fullPath);
+
 					var classificationResult = classifier.Classify( document, abstractContent );
-					if ( classificationResult != null )
+                    if (classificationResult.DocumentClassificationRestult != null)
 					{
 						ClassifiedPdfModel newModel = new ClassifiedPdfModel();
 
@@ -359,6 +361,7 @@ namespace PDFAnal
         /// <param name="e"></param>
         void classifyDocumentBackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
+            Utility.Log("Classifing " + document.File.Path);
             Classifier.ClassificationResult classificationResult = classifier.Classify(document, abstractContent);
             e.Result = classificationResult;
         }
@@ -428,7 +431,7 @@ namespace PDFAnal
             Classifier.ClassificationResult classificationResult = classificationRes as Classifier.ClassificationResult;
             SetViewEnabled(true);
             //LabelWait.Content = "";
-            if (classificationResult != null)
+            if (classificationResult.DocumentClassificationRestult != null)
             {
                 LabelClassifiedAs.Content = "classified as:";
 

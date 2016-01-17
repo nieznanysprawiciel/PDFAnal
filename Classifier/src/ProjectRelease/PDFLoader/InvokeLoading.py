@@ -6,7 +6,7 @@ proxyPort = 12345
 useProxy = True
 
 outputPath = sys.argv[1]
-numberDocuments = 7
+numberDocuments = 25
 
 pdfLoader.loadData( outputPath, numberDocuments, useProxy, proxyAddress, proxyPort )
 input("Press Enter to close console...")

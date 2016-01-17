@@ -60,12 +60,10 @@ namespace PDFAnal
             var firstLineSplit = lines[0].Split(new char[] {'='}, StringSplitOptions.RemoveEmptyEntries);
             if (firstLineSplit.Length != 2)
             {
-                Utility.Log("tu1");
                 return null;
             }
             if (firstLineSplit[0] != STRING_REPRESENTATION_FIRST_LINE_KEY)
             {
-                Utility.Log("tu2");
                 return null;
             }
             categoryName = firstLineSplit[1];
@@ -74,12 +72,10 @@ namespace PDFAnal
             var secondLineSplit = lines[1].Split(new char[] {'='}, StringSplitOptions.RemoveEmptyEntries);
             if (secondLineSplit.Length != 2)
             {
-                Utility.Log("tu3");
                 return null;
             }
             if (secondLineSplit[0] != STRING_REPRESENTATION_SECOND_LINE_KEY || !Int32.TryParse( secondLineSplit[1], out wordCount))
             {
-                Utility.Log("tu4");
                 return null;
             }
         
@@ -98,7 +94,6 @@ namespace PDFAnal
                 int synSetWordCount;
                 if (!Int32.TryParse(lineSplit[1], out synSetWordCount))
                 {
-                    Utility.Log("tu6");
                     return null;
                 }
 
@@ -106,7 +101,6 @@ namespace PDFAnal
                 var synSet = wordNetEngine.GetSynSet(lineSplit[0]);
                 if (synSet == null)
                 {
-                    Utility.Log("tu7");
                     return null;
                 }
 
