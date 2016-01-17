@@ -20,7 +20,7 @@ namespace PDFAnal.pdfManager
 		public void SetNewDirectory( string directory )
 		{
 			DirectoryInfo dirInfo = new DirectoryInfo( directory );
-			FileInfo[] info = dirInfo.GetFiles("*.*");
+			FileInfo[] info = dirInfo.GetFiles("*.pdf");
 
 			var newContent = new List<FileItem>();
 
