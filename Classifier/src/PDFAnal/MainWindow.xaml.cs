@@ -29,6 +29,7 @@ namespace PDFAnal
     {
         private static string PREDEFINED_CATAGORIES_FOLDER = @"..\categories\";
 
+        private string abstractContent;
         private Document document;
         private Classifier classifier;
 		private ClassifiedCollection classifiedDocuments;
@@ -194,6 +195,21 @@ namespace PDFAnal
 				document = file.Document;
 				DocumentNameLabel.Content = fileName;
 				ProcessPDFBButton.IsEnabled = true;
+
+                //  try to load .abstract file
+                try
+                {
+                    string abstractFileName = fileName.Replace(".pdf", ".abstract");
+                    string abstractFileContent = System.IO.File.ReadAllText(abstractFileName);
+                    abstractContent = abstractFileContent;
+                }
+                catch (Exception e)
+                {
+                    abstractContent = null;
+                    Utility.Log("file " + fullPath + " loaded without an abstract...");
+                }
+
+
 			}
 		}
 
