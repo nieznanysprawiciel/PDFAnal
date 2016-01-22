@@ -16,6 +16,7 @@ using System.Windows.Controls;
 using System.IO;
 using PDFAnal.pdfManager;
 using PDFAnal.Classification;
+using System.Windows.Input;
 
 using LAIR.ResourceAPIs.WordNet;
 using LAIR.Collections.Generic;
@@ -33,6 +34,8 @@ namespace PDFAnal
         private Document document;
         private Classifier classifier;
 		private ClassifiedCollection classifiedDocuments;
+
+        private int fileNumberToDownload = 25;
 
         private BackgroundWorker classifyDocumentBackgroundWorker;
 		private BackgroundWorker classifyAllDocumentBackgroundWorker;
@@ -405,7 +408,8 @@ namespace PDFAnal
 
 		private void DoWorkLoadPDFsWorker( object sender, DoWorkEventArgs e )
 		{
-			PDFs.LoadFromWeb( e.Argument as string );
+            int n = fileNumberToDownload;
+            PDFs.LoadFromWeb(e.Argument as string, n);
 		}
 
 		private void WorkCompletedLoadPDFsWorker( object sender, RunWorkerCompletedEventArgs e )
@@ -472,7 +476,7 @@ namespace PDFAnal
         {
             ProcessPDFBButton.IsEnabled = enabled;
 			ProcessAllPDFs.IsEnabled = enabled;
-            TestButton.IsEnabled = enabled;
+            //TestButton.IsEnabled = enabled;
             ButtonAddCategory.IsEnabled = enabled;
             ButtonLoadPredefinedCategories.IsEnabled = enabled && !predefinedCategoriesLoaded;
 
@@ -522,6 +526,58 @@ namespace PDFAnal
 			progressWindow.end = true;
 			progressWindow.Close();
 		}
+
+        private void FileNoTextBox_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            //e.Handled = false;
+            //char[] key = e.Key.ToString().ToCharArray();
+            //if (key.Length > 0)
+            //{
+            //    if (char.IsDigit(key[0]))
+            //    {
+            //        e.Handled = true;
+            //    }
+            //}
+
+
+            //Utility.Log(e.Key.ToString());
+            //if ((e.Key >= Key.A && e.Key <= Key.Z) || (e.Key >= Key.D0 && e.Key <= Key.D9) || (e.Key >= Key.NumPad0 && e.Key <= Key.NumPad9))
+            //{
+            //    Utility.Log(e.Key.ToString());
+            //    e.Handled = true;
+            //}
+            //else
+            //{
+            //    e.Handled = false;
+            //}
+
+            //if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar) && (e.KeyChar != '.'))
+            //{
+            //    e.Handled = true;
+            //}
+
+            //// only allow one decimal point
+            //if ((e.KeyChar == '.') && ((sender as TextBox).Text.IndexOf('.') > -1))
+            //{
+            //    e.Handled = true;
+            //}
+        }
+
+        private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            TextBox objTextBox = (TextBox)sender;
+            string theText = objTextBox.Text;
+            int n;
+            bool isNumeric = int.TryParse(theText, out n);
+            if (isNumeric)
+            {
+                fileNumberToDownload = n;
+            }
+            else
+            {
+                objTextBox.Text = fileNumberToDownload.ToString();
+            }
+        }
 
 	}
 }

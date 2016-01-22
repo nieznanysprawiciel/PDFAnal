@@ -64,7 +64,7 @@ namespace PDFAnal.pdfManager
 		}
 
 		// Call in background thread
-		public void LoadFromWeb( string outputPath )
+		public void LoadFromWeb( string outputPath, int fileNo )
 		{
 			if ( pythonPath == null )
 			{
@@ -76,7 +76,7 @@ namespace PDFAnal.pdfManager
 			pythonProcess.StartInfo.FileName = pythonPath;
 			pythonProcess.StartInfo.RedirectStandardOutput = false;
 			pythonProcess.StartInfo.UseShellExecute = true;
-			pythonProcess.StartInfo.Arguments = Environment.CurrentDirectory + "\\PDFLoader\\InvokeLoading.py " + outputPath;
+			pythonProcess.StartInfo.Arguments = Environment.CurrentDirectory + "\\PDFLoader\\InvokeLoading.py " + outputPath + " " + fileNo;
 			pythonProcess.StartInfo.WorkingDirectory = Environment.CurrentDirectory;
 			pythonProcess.Start();
 

@@ -28,7 +28,7 @@ namespace PDFAnal
 
         public Classifier()
         {
-            wordNetEngine = new WordNetEngine(@"..\..\resources", false);
+            wordNetEngine = new WordNetEngine(@"..\resources", false);
             semanticSimilarityModel = new WordNetSimilarityModel(wordNetEngine);
 
             //CategoriesNew = new Dictionary<string, Pair<Dictionary<SynSet, int>, int>>();
